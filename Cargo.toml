@@ -1,0 +1,9 @@
+[package]
+name = "linregress"
+version = "0.1.0"
+authors = ["Nils Mehrtens <nils@hasinila.de>"]
+edition = "2018"
+
+[dependencies]
+failure = "~0.1.5"
+nalgebra = "~0.17.0"
