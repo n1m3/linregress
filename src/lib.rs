@@ -13,7 +13,10 @@ pub fn ols_qr(inputs: &RowDVector<f64>, outputs: &DMatrix<f64>) -> Result<(f64, 
     let _normalized_cov_params = &r.tr_mul(&r).pseudo_inverse(0.);
     let _singular_values = q.to_owned().svd(false, false);
     let effects = get_sum_of_products(&q.transpose(), &inputs);
-    let result = r.qr().solve(&effects).ok_or(err_msg("Solving failed"))?;
+    let result = r
+        .qr()
+        .solve(&effects)
+        .ok_or_else(|| err_msg("Solving failed"))?;
     if result.len() < 2 {
         bail!("Invalid result matrix");
     }
@@ -45,7 +48,9 @@ mod tests {
                                         1., 1., 1., 1., 1., 1., 1.,
                                         1., 2., 3., 4., 5., 6., 7.]);
         let (slope, intercept) = ols_qr(&inputs, &outputs).expect("Solving failed!");
-        assert_eq!((slope, intercept), (2.1428571428571423, 0.25000000000000006));
-
+        assert_eq!(
+            (slope, intercept),
+            (2.1428571428571423, 0.25000000000000006)
+        );
     }
 }
