@@ -2,6 +2,11 @@
 use failure::{bail, err_msg, Error};
 use nalgebra::{DMatrix, RowDVector};
 
+/// Performs a linear regression.
+///
+/// Peforms a ordinary least squared linear regression using the QR method to solve the linear
+/// system. If successful it returns a tuple of the form `(slope, intercept).`
+///
 pub fn ols_qr(inputs: &RowDVector<f64>, outputs: &DMatrix<f64>) -> Result<(f64, f64), Error> {
     let qr = outputs.to_owned().qr();
     let (q, r) = (qr.q(), qr.r());
