@@ -2,17 +2,7 @@
 use failure::{bail, err_msg, Error};
 use nalgebra::{DMatrix, RowDVector};
 
-fn main() {
-    let inputs = RowDVector::from_vec(vec![1., 3., 4., 5., 2., 3., 4.]);
-    #[rustfmt::skip]
-    let outputs = DMatrix::from_vec(7,2,
-                                    vec![
-                                    1., 1., 1., 1., 1., 1., 1.,
-                                    1., 2., 3., 4., 5., 6., 7.]);
-    let (slope, intercept) = ols_qr(&inputs, &outputs).expect("Solving failed!");
-    println!("Slope {}\nIntercept{}", slope, intercept);
-}
-fn ols_qr(inputs: &RowDVector<f64>, outputs: &DMatrix<f64>) -> Result<(f64, f64), Error> {
+pub fn ols_qr(inputs: &RowDVector<f64>, outputs: &DMatrix<f64>) -> Result<(f64, f64), Error> {
     let qr = outputs.to_owned().qr();
     let (q, r) = (qr.q(), qr.r());
     let _normalized_cov_params = &r.tr_mul(&r).pseudo_inverse(0.);
@@ -37,4 +27,20 @@ fn get_sum_of_products(matrix: &DMatrix<f64>, vector: &RowDVector<f64>) -> DMatr
         v.push(sum);
     }
     DMatrix::from_vec(matrix.nrows(), 1, v)
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_ols_qr() {
+        let inputs = RowDVector::from_vec(vec![1., 3., 4., 5., 2., 3., 4.]);
+        #[rustfmt::skip]
+        let outputs = DMatrix::from_vec(7,2,
+                                        vec![
+                                        1., 1., 1., 1., 1., 1., 1.,
+                                        1., 2., 3., 4., 5., 6., 7.]);
+        let (slope, intercept) = ols_qr(&inputs, &outputs).expect("Solving failed!");
+        assert_eq!((slope, intercept), (2.1428571428571423, 0.25000000000000006));
+
+    }
 }
