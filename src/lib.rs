@@ -2,7 +2,7 @@
 use failure::{bail, err_msg, Error};
 use nalgebra::{DMatrix, RowDVector};
 
-pub fn ols_pinv(inputs: &RowDVector<f64>, outputs: &DMatrix<f64>) -> Result<(f64, f64), Error> {
+pub fn ols_pinv(inputs: &RowDVector<f64>, outputs: &DMatrix<f64>) -> Result<Vec<f64>, Error> {
     let singular_values = &outputs.to_owned().svd(false, false).singular_values;
     let diag = DMatrix::from_diagonal(&singular_values);
     let _rank = &diag.rank(0.0);
@@ -15,9 +15,8 @@ pub fn ols_pinv(inputs: &RowDVector<f64>, outputs: &DMatrix<f64>) -> Result<(f64
     if result.len() < 2 {
         bail!("Invalid result matrix");
     }
-    let slope = result[0];
-    let intercept = result[1];
-    Ok((slope, intercept))
+    let result: Vec<f64> = result.iter().cloned().collect();
+    Ok(result)
 }
 
 /// Performs a linear regression.
@@ -72,16 +71,34 @@ mod tests {
         assert_eq!((slope, intercept), (2.14285714, 0.25));
     }
     #[test]
-    fn test_ols_pinv() {
+    fn test_ols_pinv_single_regession() {
         let inputs = RowDVector::from_vec(vec![1., 3., 4., 5., 2., 3., 4.]);
         #[rustfmt::skip]
         let outputs = DMatrix::from_vec(7,2,
                                         vec![
                                         1., 1., 1., 1., 1., 1., 1.,
                                         1., 2., 3., 4., 5., 6., 7.]);
-        let (slope, intercept) = ols_pinv(&inputs, &outputs).expect("Solving failed!");
-        let slope = round::half_up(slope, 8);
-        let intercept = round::half_up(intercept, 2);
+        let params = ols_pinv(&inputs, &outputs).expect("Solving failed!");
+        let slope = round::half_up(params[0], 8);
+        let intercept = round::half_up(params[1], 2);
         assert_eq!((slope, intercept), (2.14285714, 0.25));
+    }
+    #[test]
+    fn test_ols_pinv_multiple_regression() {
+        let inputs = RowDVector::from_vec(vec![1., 3., 4., 5., 2., 3., 4.]);
+        #[rustfmt::skip]
+        let outputs = DMatrix::from_vec(7,3,
+                                        vec![
+                                        1., 1., 1., 1., 1., 1., 1.,
+                                        1., 2., 3., 4., 5., 6., 7.,
+                                        7., 6., 5., 4., 3., 2., 1.]);
+        let params = ols_pinv(&inputs, &outputs).expect("Solving failed!");
+        let slope = round::half_up(params[0], 8);
+        let slope2 = round::half_up(params[1], 8);
+        let intercept = round::half_up(params[2], 8);
+        assert_eq!(
+            (slope, slope2, intercept),
+            (0.0952381, 0.50595238, 0.25595238)
+        );
     }
 }
