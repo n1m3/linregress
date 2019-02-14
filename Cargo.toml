@@ -7,3 +7,4 @@ edition = "2018"
 [dependencies]
 failure = "~0.1.5"
 nalgebra = "~0.17.0"
+libmath = "~0.2.1"

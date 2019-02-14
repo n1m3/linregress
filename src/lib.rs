@@ -39,6 +39,7 @@ fn get_sum_of_products(matrix: &DMatrix<f64>, vector: &RowDVector<f64>) -> DMatr
 #[cfg(test)]
 mod tests {
     use super::*;
+    use math::round;
     #[test]
     fn test_ols_qr() {
         let inputs = RowDVector::from_vec(vec![1., 3., 4., 5., 2., 3., 4.]);
@@ -48,9 +49,8 @@ mod tests {
                                         1., 1., 1., 1., 1., 1., 1.,
                                         1., 2., 3., 4., 5., 6., 7.]);
         let (slope, intercept) = ols_qr(&inputs, &outputs).expect("Solving failed!");
-        assert_eq!(
-            (slope, intercept),
-            (2.1428571428571423, 0.25000000000000006)
-        );
+        let slope = round::half_up(slope, 8);
+        let intercept = round::half_up(intercept, 2);
+        assert_eq!((slope, intercept), (2.14285714, 0.25));
     }
 }
