@@ -2,6 +2,24 @@
 use failure::{bail, err_msg, Error};
 use nalgebra::{DMatrix, RowDVector};
 
+pub fn ols_pinv(inputs: &RowDVector<f64>, outputs: &DMatrix<f64>) -> Result<(f64, f64), Error> {
+    let singular_values = &outputs.to_owned().svd(false, false).singular_values;
+    let diag = DMatrix::from_diagonal(&singular_values);
+    let _rank = &diag.rank(0.0);
+    let pinv = outputs
+        .to_owned()
+        .pseudo_inverse(0.)
+        .map_err(|_| err_msg("Taking the pinv of the output matrix failed"))?;
+    let _normalized_cov_params = &pinv * &pinv.transpose();
+    let result = get_sum_of_products(&pinv, &inputs);
+    if result.len() < 2 {
+        bail!("Invalid result matrix");
+    }
+    let slope = result[0];
+    let intercept = result[1];
+    Ok((slope, intercept))
+}
+
 /// Performs a linear regression.
 ///
 /// Peforms a ordinary least squared linear regression using the QR method to solve the linear
@@ -49,6 +67,19 @@ mod tests {
                                         1., 1., 1., 1., 1., 1., 1.,
                                         1., 2., 3., 4., 5., 6., 7.]);
         let (slope, intercept) = ols_qr(&inputs, &outputs).expect("Solving failed!");
+        let slope = round::half_up(slope, 8);
+        let intercept = round::half_up(intercept, 2);
+        assert_eq!((slope, intercept), (2.14285714, 0.25));
+    }
+    #[test]
+    fn test_ols_pinv() {
+        let inputs = RowDVector::from_vec(vec![1., 3., 4., 5., 2., 3., 4.]);
+        #[rustfmt::skip]
+        let outputs = DMatrix::from_vec(7,2,
+                                        vec![
+                                        1., 1., 1., 1., 1., 1., 1.,
+                                        1., 2., 3., 4., 5., 6., 7.]);
+        let (slope, intercept) = ols_pinv(&inputs, &outputs).expect("Solving failed!");
         let slope = round::half_up(slope, 8);
         let intercept = round::half_up(intercept, 2);
         assert_eq!((slope, intercept), (2.14285714, 0.25));
