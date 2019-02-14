@@ -6,7 +6,7 @@ use nalgebra::{DMatrix, RowDVector};
 ///
 /// Peforms a ordinary least squared linear regression using the pseudo inverse method to solve the linear system.
 /// This method supports multiple linear regression.
-/// If successful it returns a `Vec` of the form `vec![slope1, slope2, ..., intercept]`.
+/// If successful it returns a `Vec` of the form `vec![intercept, slope1, slope2, ...]`.
 ///
 pub fn ols_pinv(inputs: &RowDVector<f64>, outputs: &DMatrix<f64>) -> Result<Vec<f64>, Error> {
     let singular_values = &outputs.to_owned().svd(false, false).singular_values;
@@ -29,7 +29,7 @@ pub fn ols_pinv(inputs: &RowDVector<f64>, outputs: &DMatrix<f64>) -> Result<Vec<
 ///
 /// Peforms a ordinary least squared linear regression using the QR method to solve the linear system.
 /// This method does not support multile linear regression.
-/// If successful it returns a tuple of the form `(slope, intercept)`.
+/// If successful it returns a tuple of the form `(intercept, slope)`.
 ///
 pub fn ols_qr(inputs: &RowDVector<f64>, outputs: &DMatrix<f64>) -> Result<(f64, f64), Error> {
     let qr = outputs.to_owned().qr();
@@ -44,8 +44,8 @@ pub fn ols_qr(inputs: &RowDVector<f64>, outputs: &DMatrix<f64>) -> Result<(f64, 
     if result.len() < 2 {
         bail!("Invalid result matrix");
     }
-    let slope = result[0];
-    let intercept = result[1];
+    let intercept = result[0];
+    let slope = result[1];
     Ok((slope, intercept))
 }
 fn get_sum_of_products(matrix: &DMatrix<f64>, vector: &RowDVector<f64>) -> DMatrix<f64> {
@@ -72,10 +72,10 @@ mod tests {
                                         vec![
                                         1., 1., 1., 1., 1., 1., 1.,
                                         1., 2., 3., 4., 5., 6., 7.]);
-        let (slope, intercept) = ols_qr(&inputs, &outputs).expect("Solving failed!");
-        let slope = round::half_up(slope, 8);
+        let (intercept, slope) = ols_qr(&inputs, &outputs).expect("Solving failed!");
         let intercept = round::half_up(intercept, 2);
-        assert_eq!((slope, intercept), (2.14285714, 0.25));
+        let slope = round::half_up(slope, 8);
+        assert_eq!((intercept, slope), (0.25, 2.14285714));
     }
     #[test]
     fn test_ols_pinv_single_regession() {
@@ -86,9 +86,9 @@ mod tests {
                                         1., 1., 1., 1., 1., 1., 1.,
                                         1., 2., 3., 4., 5., 6., 7.]);
         let params = ols_pinv(&inputs, &outputs).expect("Solving failed!");
-        let slope = round::half_up(params[0], 8);
-        let intercept = round::half_up(params[1], 2);
-        assert_eq!((slope, intercept), (2.14285714, 0.25));
+        let intercept = round::half_up(params[0], 8);
+        let slope = round::half_up(params[1], 2);
+        assert_eq!((intercept, slope), (2.14285714, 0.25));
     }
     #[test]
     fn test_ols_pinv_multiple_regression() {
@@ -100,11 +100,11 @@ mod tests {
                                         1., 2., 3., 4., 5., 6., 7.,
                                         7., 6., 5., 4., 3., 2., 1.]);
         let params = ols_pinv(&inputs, &outputs).expect("Solving failed!");
-        let slope = round::half_up(params[0], 8);
-        let slope2 = round::half_up(params[1], 8);
-        let intercept = round::half_up(params[2], 8);
+        let intercept = round::half_up(params[0], 8);
+        let slope = round::half_up(params[1], 8);
+        let slope2 = round::half_up(params[2], 8);
         assert_eq!(
-            (slope, slope2, intercept),
+            (intercept, slope, slope2),
             (0.0952381, 0.50595238, 0.25595238)
         );
     }
