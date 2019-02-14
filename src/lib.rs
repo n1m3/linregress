@@ -2,6 +2,12 @@
 use failure::{bail, err_msg, Error};
 use nalgebra::{DMatrix, RowDVector};
 
+/// Performs a linear regression.
+///
+/// Peforms a ordinary least squared linear regression using the pseudo inverse method to solve the linear system.
+/// This method supports multiple linear regression.
+/// If successful it returns a `Vec` of the form `vec![slope1, slope2, ..., intercept]`.
+///
 pub fn ols_pinv(inputs: &RowDVector<f64>, outputs: &DMatrix<f64>) -> Result<Vec<f64>, Error> {
     let singular_values = &outputs.to_owned().svd(false, false).singular_values;
     let diag = DMatrix::from_diagonal(&singular_values);
@@ -21,8 +27,9 @@ pub fn ols_pinv(inputs: &RowDVector<f64>, outputs: &DMatrix<f64>) -> Result<Vec<
 
 /// Performs a linear regression.
 ///
-/// Peforms a ordinary least squared linear regression using the QR method to solve the linear
-/// system. If successful it returns a tuple of the form `(slope, intercept).`
+/// Peforms a ordinary least squared linear regression using the QR method to solve the linear system.
+/// This method does not support multile linear regression.
+/// If successful it returns a tuple of the form `(slope, intercept)`.
 ///
 pub fn ols_qr(inputs: &RowDVector<f64>, outputs: &DMatrix<f64>) -> Result<(f64, f64), Error> {
     let qr = outputs.to_owned().qr();
