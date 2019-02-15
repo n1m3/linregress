@@ -1,6 +1,7 @@
 #![warn(rust_2018_idioms)]
 use failure::{bail, err_msg, Error};
-use nalgebra::{DMatrix, DVector, RowDVector};
+use nalgebra::{DMatrix, RowDVector};
+use statrs::distribution::{StudentsT, Univariate};
 
 /// Performs a linear regression.
 ///
@@ -35,15 +36,18 @@ pub fn ols_pinv(inputs: &RowDVector<f64>, outputs: &DMatrix<f64>) -> Result<Vec<
     let centered_tss = &centered_input_matrix.dot(&centered_input_matrix);
     let rsquared = 1. - (ssr / centered_tss);
     let df_resid = n - rank;
-    let rsquared_adj = 1. - ((n - 1) as f64 / df_resid as f64 * (1. - rsquared));
+    let _rsquared_adj = 1. - ((n - 1) as f64 / df_resid as f64 * (1. - rsquared));
     let tvalues: Vec<_> = matrix_as_vec(&params)
         .iter()
         .zip(matrix_as_vec(&bse))
         .map(|(x, y)| x / y)
         .collect();
-    dbg!(tvalues);
-    // pvalues = stats.t.sf(np.abs(self.tvalues), df_resid) * 2
-    // https://github.com/scipy/scipy/blob/v1.2.1/scipy/stats/_continuous_distns.py#L5167
+    let students_t = StudentsT::new(0.0, 1.0, df_resid as f64)?;
+    let _pvalues: Vec<_> = tvalues
+        .iter()
+        .cloned()
+        .map(|x| (1. - students_t.cdf(x)) * 2.)
+        .collect();
     Ok(result)
 }
 fn matrix_as_vec(matrix: &DMatrix<f64>) -> Vec<f64> {
