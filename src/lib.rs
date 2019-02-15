@@ -1,6 +1,6 @@
 #![warn(rust_2018_idioms)]
 use failure::{bail, err_msg, Error};
-use nalgebra::{DMatrix, RowDVector};
+use nalgebra::{DMatrix, DVector, RowDVector};
 use statrs::distribution::{StudentsT, Univariate};
 use std::collections::HashMap;
 use std::iter;
@@ -11,23 +11,10 @@ use std::iter;
 pub struct FormulaRegressionBuilder {
     data: Option<HashMap<String, Vec<f64>>>,
     formula: Option<String>,
-    fitting_method: FittingMethod,
 }
 impl Default for FormulaRegressionBuilder {
     fn default() -> Self {
         FormulaRegressionBuilder::new()
-    }
-}
-
-/// Represents a method to used to fit a linear regression model
-#[derive(Debug)]
-pub enum FittingMethod {
-    Pinv,
-    QR,
-}
-impl Default for FittingMethod {
-    fn default() -> Self {
-        FittingMethod::Pinv
     }
 }
 
@@ -36,7 +23,6 @@ impl FormulaRegressionBuilder {
         FormulaRegressionBuilder {
             data: None,
             formula: None,
-            fitting_method: FittingMethod::default(),
         }
     }
     pub fn data(mut self, data: &HashMap<String, Vec<f64>>) -> Self {
@@ -69,9 +55,6 @@ impl FormulaRegressionBuilder {
         if outputs.is_empty() {
             bail!("Invalid formula. Expected formula of the form 'y ~ x1 + x2'");
         }
-        if let FittingMethod::QR = self.fitting_method {
-            bail!("QR method does not support multiple linear regression");
-        }
         let input_vector = data
             .get(input)
             .ok_or_else(|| err_msg(format!("{} not found in data", input)))?;
@@ -93,21 +76,49 @@ impl FormulaRegressionBuilder {
             }
             output_matrix.extend(output_vec.iter());
         }
-        let output_matrix = DMatrix::from_vec(outputs.len() + 1, input_vector.len(), output_matrix);
-        dbg!(output_matrix);
-        match self.fitting_method {
-            FittingMethod::QR => unimplemented!(),
-            FittingMethod::Pinv => unimplemented!(),
+        //
+        let output_matrix = DMatrix::from_vec(input_vector.len(), outputs.len() + 1, output_matrix);
+        let (model_parameter, singular_values, normalized_cov_params) =
+            Self::fit_ols_pinv(&input_vector, &output_matrix)?;
+        RegressionModel::try_from_regression_parameters(
+            &input_vector,
+            &output_matrix,
+            &model_parameter,
+            &singular_values,
+            &normalized_cov_params,
+            data,
+            formula,
+        )
+    }
+    // XXX move to Regression result as with_ols_...
+    /// Performs ordinary least squared linear regression using the pseudo inverse method to solve
+    /// the linear system.
+    ///
+    /// Returns a tuple of the form `(model_parameter, singular_values, normalized_cov_params)` as `Result`.
+    fn fit_ols_pinv(
+        inputs: &RowDVector<f64>,
+        outputs: &DMatrix<f64>,
+    ) -> Result<(DMatrix<f64>, DVector<f64>, DMatrix<f64>), Error> {
+        let singular_values = &outputs.to_owned().svd(false, false).singular_values;
+        let pinv = outputs
+            .to_owned()
+            .pseudo_inverse(0.)
+            .map_err(|_| err_msg("Taking the pinv of the output matrix failed"))?;
+        let normalized_cov_params = &pinv * &pinv.transpose();
+        let params = get_sum_of_products(&pinv, &inputs);
+        if params.len() < 2 {
+            bail!("Invalid parameter matrix");
         }
+        Ok((params, singular_values.to_owned(), normalized_cov_params))
     }
 }
 
 /// A fitted regression model
 ///
+#[derive(Debug)]
 pub struct RegressionModel {
     pub data: Option<HashMap<String, Vec<f64>>>,
     pub formula: Option<String>,
-    pub fitting_method: FittingMethod,
     pub parameters: Vec<f64>,
     pub se: Vec<f64>,
     pub ssr: f64,
@@ -115,6 +126,60 @@ pub struct RegressionModel {
     pub rsquared_adj: f64,
     pub pvalues: Vec<f64>,
     pub residuals: Vec<f64>,
+}
+impl RegressionModel {
+    pub fn try_from_regression_parameters(
+        inputs: &RowDVector<f64>,
+        outputs: &DMatrix<f64>,
+        parameters: &DMatrix<f64>,
+        singular_values: &DVector<f64>,
+        normalized_cov_params: &DMatrix<f64>,
+        data: HashMap<String, Vec<f64>>,
+        formula: String,
+    ) -> Result<Self, Error> {
+        let diag = DMatrix::from_diagonal(&singular_values);
+        let rank = &diag.rank(0.0);
+        let input_vec: Vec<_> = inputs.iter().cloned().collect();
+        let input_matrix = DMatrix::from_vec(inputs.len(), 1, input_vec);
+        let residuals = &input_matrix - (outputs * parameters.to_owned());
+        let ssr = residuals.dot(&residuals);
+        let p = outputs.ncols() - 1;
+        let n = inputs.ncols();
+        let scale = ssr / ((n - p) as f64);
+        let cov_params = normalized_cov_params.to_owned() * scale;
+        let se = get_bse_from_cov_params(&cov_params)?;
+        let centered_input_matrix = subtract_value_from_matrix(&input_matrix, input_matrix.mean());
+        let centered_tss = &centered_input_matrix.dot(&centered_input_matrix);
+        let rsquared = 1. - (ssr / centered_tss);
+        let df_resid = n - rank;
+        let rsquared_adj = 1. - ((n - 1) as f64 / df_resid as f64 * (1. - rsquared));
+        let tvalues: Vec<_> = matrix_as_vec(parameters)
+            .iter()
+            .zip(matrix_as_vec(&se))
+            .map(|(x, y)| x / y)
+            .collect();
+        let students_t = StudentsT::new(0.0, 1.0, df_resid as f64)?;
+        let pvalues: Vec<_> = tvalues
+            .iter()
+            .cloned()
+            .map(|x| (1. - students_t.cdf(x)) * 2.)
+            .collect();
+        // Convert these from interal Matrix types to user facing Vecs
+        let parameters: Vec<_> = parameters.iter().cloned().collect();
+        let se: Vec<_> = se.iter().cloned().collect();
+        let residuals: Vec<_> = residuals.iter().cloned().collect();
+        Ok(Self {
+            data: Some(data),
+            formula: Some(formula),
+            parameters,
+            se,
+            ssr,
+            rsquared,
+            rsquared_adj,
+            pvalues,
+            residuals,
+        })
+    }
 }
 
 /// Performs a linear regression.
