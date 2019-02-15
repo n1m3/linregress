@@ -107,7 +107,7 @@ pub struct RegressionModel {
     pub residuals: Vec<f64>,
 }
 impl RegressionModel {
-    pub fn try_from_regression_parameters(
+    fn try_from_regression_parameters(
         inputs: &RowDVector<f64>,
         outputs: &DMatrix<f64>,
         parameters: &DMatrix<f64>,
