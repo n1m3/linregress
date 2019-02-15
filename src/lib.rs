@@ -3,6 +3,7 @@ use failure::{bail, err_msg, Error};
 use nalgebra::{DMatrix, RowDVector};
 use statrs::distribution::{StudentsT, Univariate};
 use std::collections::HashMap;
+use std::iter;
 
 /// A builder to create a linear regression model
 ///
@@ -17,6 +18,19 @@ impl Default for FormulaRegressionBuilder {
         FormulaRegressionBuilder::new()
     }
 }
+
+/// Represents a method to used to fit a linear regression model
+#[derive(Debug)]
+pub enum FittingMethod {
+    Pinv,
+    QR,
+}
+impl Default for FittingMethod {
+    fn default() -> Self {
+        FittingMethod::Pinv
+    }
+}
+
 impl FormulaRegressionBuilder {
     pub fn new() -> Self {
         FormulaRegressionBuilder {
@@ -34,34 +48,73 @@ impl FormulaRegressionBuilder {
         self
     }
     pub fn fit(self) -> Result<RegressionModel, Error> {
-        unimplemented!();
+        let data: Result<_, Error> = self
+            .data
+            .ok_or_else(|| err_msg("Cannot fit model without data"));
+        let formula: Result<_, Error> = self
+            .formula
+            .ok_or_else(|| err_msg("Cannot fit model without formula"));
+        let data = data?;
+        let formula = formula?;
+        let split_formula: Vec<_> = formula.split('~').collect();
+        if split_formula.len() != 2 {
+            bail!("Invalid formula. Expected formula of the form 'y ~ x1 + x2'");
+        }
+        let input = split_formula[0].trim();
+        let outputs: Vec<_> = split_formula[1]
+            .split('+')
+            .map(|x| x.trim())
+            .filter(|x| *x != "")
+            .collect();
+        if outputs.is_empty() {
+            bail!("Invalid formula. Expected formula of the form 'y ~ x1 + x2'");
+        }
+        if let FittingMethod::QR = self.fitting_method {
+            bail!("QR method does not support multiple linear regression");
+        }
+        let input_vector = data
+            .get(input)
+            .ok_or_else(|| err_msg(format!("{} not found in data", input)))?;
+        let input_vector = RowDVector::from_vec(input_vector.to_vec());
+        let mut output_matrix = Vec::new();
+        // Add column of all ones as the first column of the matrix
+        let all_ones_column = iter::repeat(1.).take(input_vector.len());
+        output_matrix.extend(all_ones_column);
+        // Add each input as a new column of the matrix
+        for output in outputs.to_owned() {
+            let output_vec = data
+                .get(output)
+                .ok_or_else(|| err_msg(format!("{} not found in data", output)))?;
+            if output_vec.len() != input_vector.len() {
+                bail!(format!(
+                    "Regressor dimensions for {} do not match regressand dimensions",
+                    output
+                ));
+            }
+            output_matrix.extend(output_vec.iter());
+        }
+        let output_matrix = DMatrix::from_vec(outputs.len() + 1, input_vector.len(), output_matrix);
+        dbg!(output_matrix);
+        match self.fitting_method {
+            FittingMethod::QR => unimplemented!(),
+            FittingMethod::Pinv => unimplemented!(),
+        }
     }
 }
+
 /// A fitted regression model
 ///
 pub struct RegressionModel {
-    data: Option<HashMap<String, Vec<f64>>>,
-    formula: Option<String>,
-    fitting_method: FittingMethod,
-    parameters: Vec<f64>,
-    se: Vec<f64>,
-    ssr: f64,
-    rsquared: f64,
-    rsquared_adj: f64,
-    pvalues: Vec<f64>,
-    residuals: Vec<f64>,
-}
-
-/// Represents a method to used to fit a linear regression model
-#[derive(Debug)]
-pub enum FittingMethod {
-    Pinv,
-    QR,
-}
-impl Default for FittingMethod {
-    fn default() -> Self {
-        FittingMethod::Pinv
-    }
+    pub data: Option<HashMap<String, Vec<f64>>>,
+    pub formula: Option<String>,
+    pub fitting_method: FittingMethod,
+    pub parameters: Vec<f64>,
+    pub se: Vec<f64>,
+    pub ssr: f64,
+    pub rsquared: f64,
+    pub rsquared_adj: f64,
+    pub pvalues: Vec<f64>,
+    pub residuals: Vec<f64>,
 }
 
 /// Performs a linear regression.
