@@ -1,6 +1,6 @@
 #![warn(rust_2018_idioms)]
 use failure::{bail, err_msg, Error};
-use nalgebra::{DMatrix, RowDVector};
+use nalgebra::{DMatrix, DVector, RowDVector};
 
 /// Performs a linear regression.
 ///
@@ -11,18 +11,71 @@ use nalgebra::{DMatrix, RowDVector};
 pub fn ols_pinv(inputs: &RowDVector<f64>, outputs: &DMatrix<f64>) -> Result<Vec<f64>, Error> {
     let singular_values = &outputs.to_owned().svd(false, false).singular_values;
     let diag = DMatrix::from_diagonal(&singular_values);
-    let _rank = &diag.rank(0.0);
+    let rank = &diag.rank(0.0);
     let pinv = outputs
         .to_owned()
         .pseudo_inverse(0.)
         .map_err(|_| err_msg("Taking the pinv of the output matrix failed"))?;
-    let _normalized_cov_params = &pinv * &pinv.transpose();
-    let result = get_sum_of_products(&pinv, &inputs);
-    if result.len() < 2 {
-        bail!("Invalid result matrix");
+    let normalized_cov_params = &pinv * &pinv.transpose();
+    let params = get_sum_of_products(&pinv, &inputs);
+    if params.len() < 2 {
+        bail!("Invalid parameter matrix");
     }
-    let result: Vec<f64> = result.iter().cloned().collect();
+    let result: Vec<f64> = params.iter().cloned().collect();
+    let input_vec: Vec<_> = inputs.iter().cloned().collect();
+    let input_matrix = DMatrix::from_vec(inputs.len(), 1, input_vec);
+    let residuals = &input_matrix - (outputs * params.to_owned());
+    let ssr = residuals.dot(&residuals);
+    let p = outputs.ncols() - 1;
+    let n = inputs.ncols();
+    let scale = ssr / ((n - p) as f64);
+    let cov_params = normalized_cov_params.to_owned() * scale;
+    let bse = get_bse_from_cov_params(&cov_params)?;
+    let centered_input_matrix = subtract_value_from_matrix(&input_matrix, input_matrix.mean());
+    let centered_tss = &centered_input_matrix.dot(&centered_input_matrix);
+    let rsquared = 1. - (ssr / centered_tss);
+    let df_resid = n - rank;
+    let rsquared_adj = 1. - ((n - 1) as f64 / df_resid as f64 * (1. - rsquared));
+    let tvalues: Vec<_> = matrix_as_vec(&params)
+        .iter()
+        .zip(matrix_as_vec(&bse))
+        .map(|(x, y)| x / y)
+        .collect();
+    dbg!(tvalues);
+    // pvalues = stats.t.sf(np.abs(self.tvalues), df_resid) * 2
+    // https://github.com/scipy/scipy/blob/v1.2.1/scipy/stats/_continuous_distns.py#L5167
     Ok(result)
+}
+fn matrix_as_vec(matrix: &DMatrix<f64>) -> Vec<f64> {
+    let mut vector = Vec::new();
+    for row_index in 0..matrix.nrows() {
+        let row = matrix.row(row_index);
+        for i in row.iter() {
+            vector.push(*i);
+        }
+    }
+    vector
+}
+fn subtract_value_from_matrix(matrix: &DMatrix<f64>, value: f64) -> DMatrix<f64> {
+    let mut v = Vec::new();
+    for row_index in 0..matrix.nrows() {
+        let row = matrix.row(row_index);
+        for i in row.iter().map(|i| i - value) {
+            v.push(i);
+        }
+    }
+    DMatrix::from_vec(matrix.nrows(), matrix.ncols(), v)
+}
+fn get_bse_from_cov_params(matrix: &DMatrix<f64>) -> Result<DMatrix<f64>, Error> {
+    let mut v = Vec::new();
+    for row_index in 0..matrix.ncols() {
+        let row = matrix.row(row_index);
+        if row_index > row.len() {
+            bail!("Matrix is not square");
+        }
+        v.push(row[row_index].sqrt());
+    }
+    Ok(DMatrix::from_vec(matrix.ncols(), 1, v))
 }
 
 /// Performs a linear regression.
