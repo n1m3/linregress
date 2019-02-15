@@ -2,6 +2,67 @@
 use failure::{bail, err_msg, Error};
 use nalgebra::{DMatrix, RowDVector};
 use statrs::distribution::{StudentsT, Univariate};
+use std::collections::HashMap;
+
+/// A builder to create a linear regression model
+///
+#[derive(Debug)]
+pub struct FormulaRegressionBuilder {
+    data: Option<HashMap<String, Vec<f64>>>,
+    formula: Option<String>,
+    fitting_method: FittingMethod,
+}
+impl Default for FormulaRegressionBuilder {
+    fn default() -> Self {
+        FormulaRegressionBuilder::new()
+    }
+}
+impl FormulaRegressionBuilder {
+    pub fn new() -> Self {
+        FormulaRegressionBuilder {
+            data: None,
+            formula: None,
+            fitting_method: FittingMethod::default(),
+        }
+    }
+    pub fn data(mut self, data: &HashMap<String, Vec<f64>>) -> Self {
+        self.data = Some(data.to_owned());
+        self
+    }
+    pub fn formula<T: Into<String>>(mut self, formula: T) -> Self {
+        self.formula = Some(formula.into());
+        self
+    }
+    pub fn fit(self) -> Result<RegressionModel, Error> {
+        unimplemented!();
+    }
+}
+/// A fitted regression model
+///
+pub struct RegressionModel {
+    data: Option<HashMap<String, Vec<f64>>>,
+    formula: Option<String>,
+    fitting_method: FittingMethod,
+    parameters: Vec<f64>,
+    se: Vec<f64>,
+    ssr: f64,
+    rsquared: f64,
+    rsquared_adj: f64,
+    pvalues: Vec<f64>,
+    residuals: Vec<f64>,
+}
+
+/// Represents a method to used to fit a linear regression model
+#[derive(Debug)]
+pub enum FittingMethod {
+    Pinv,
+    QR,
+}
+impl Default for FittingMethod {
+    fn default() -> Self {
+        FittingMethod::Pinv
+    }
+}
 
 /// Performs a linear regression.
 ///
@@ -121,6 +182,49 @@ fn get_sum_of_products(matrix: &DMatrix<f64>, vector: &RowDVector<f64>) -> DMatr
 mod tests {
     use super::*;
     use math::round;
+    #[test]
+    fn test_pinv_with_formula_builder() {
+        use std::collections::HashMap;
+        let inputs = vec![1., 3., 4., 5., 2., 3., 4.];
+        let outputs1 = vec![1., 2., 3., 4., 5., 6., 7.];
+        let outputs2 = vec![7., 6., 5., 4., 3., 2., 1.];
+        let mut data = HashMap::new();
+        data.insert("Y".to_string(), inputs);
+        data.insert("X1".to_string(), outputs1);
+        data.insert("X2".to_string(), outputs2);
+        let regression = FormulaRegressionBuilder::new()
+            .data(&data)
+            .formula("Y ~ X1 + X2")
+            .fit()
+            .expect("Fitting model failed");
+
+        let model_parameters = vec![0.09523809523809511, 0.5059523809523809, 0.25595238095238104];
+        let se = vec![0.015457637291218271, 0.1417242813072997, 0.1417242813072997];
+        let ssr = 9.107142857142858;
+        let rsquared = 0.16118421052631582;
+        let rsquared_adj = -0.006578947368421018;
+        let pvalues = vec![
+            0.0016390312044176625,
+            0.01604408370984789,
+            0.13074580446389206,
+        ];
+        let residuals = vec![
+            -1.3928571428571432,
+            0.35714285714285676,
+            1.1071428571428568,
+            1.8571428571428572,
+            -1.3928571428571428,
+            -0.6428571428571423,
+            0.10714285714285765,
+        ];
+        assert_eq!(regression.parameters, model_parameters);
+        assert_eq!(regression.se, se);
+        assert_eq!(regression.ssr, ssr);
+        assert_eq!(regression.rsquared, rsquared);
+        assert_eq!(regression.rsquared_adj, rsquared_adj);
+        assert_eq!(regression.pvalues, pvalues);
+        assert_eq!(regression.residuals, residuals);
+    }
     #[test]
     fn test_ols_qr() {
         let inputs = RowDVector::from_vec(vec![1., 3., 4., 5., 2., 3., 4.]);
