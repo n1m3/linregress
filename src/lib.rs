@@ -5,7 +5,7 @@ use statrs::distribution::{StudentsT, Univariate};
 use std::collections::HashMap;
 use std::iter;
 
-mod special_functions;
+pub mod special_functions;
 
 /// A builder to create and fit linear regression model.
 ///
