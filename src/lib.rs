@@ -196,12 +196,12 @@ impl FormulaRegressionBuilder {
             fit_ols_pinv(input_vector.to_owned(), output_matrix.to_owned())?;
         let outputs: Vec<_> = outputs.iter().map(|x| x.to_string()).collect();
         RegressionModel::try_from_regression_parameters(
-            &input_vector,
-            &output_matrix,
-            &outputs,
-            &model_parameter,
-            &singular_values,
-            &normalized_cov_params,
+            input_vector,
+            output_matrix,
+            outputs,
+            model_parameter,
+            singular_values,
+            normalized_cov_params,
         )
     }
 }
@@ -240,12 +240,12 @@ pub struct RegressionModel {
 }
 impl RegressionModel {
     fn try_from_regression_parameters(
-        inputs: &RowDVector<f64>,
-        outputs: &DMatrix<f64>,
-        output_names: &[String],
-        parameters: &DMatrix<f64>,
-        singular_values: &DVector<f64>,
-        normalized_cov_params: &DMatrix<f64>,
+        inputs: RowDVector<f64>,
+        outputs: DMatrix<f64>,
+        output_names: Vec<String>,
+        parameters: DMatrix<f64>,
+        singular_values: DVector<f64>,
+        normalized_cov_params: DMatrix<f64>,
     ) -> Result<Self, Error> {
         let diag = DMatrix::from_diagonal(&singular_values);
         let rank = &diag.rank(0.0);
@@ -265,9 +265,9 @@ impl RegressionModel {
         let centered_tss = &centered_input_matrix.dot(&centered_input_matrix);
         let rsquared = 1. - (ssr / centered_tss);
         let rsquared_adj = 1. - ((n - 1) as f64 / df_resid as f64 * (1. - rsquared));
-        let tvalues: Vec<_> = matrix_as_vec(parameters)
+        let tvalues: Vec<_> = matrix_as_vec(parameters.to_owned())
             .iter()
-            .zip(matrix_as_vec(&se))
+            .zip(matrix_as_vec(se.to_owned()))
             .map(|(x, y)| x / y)
             .collect();
         let pvalues: Vec<_> = tvalues
@@ -380,7 +380,7 @@ fn fit_ols_pinv(
     Ok((params, singular_values.to_owned(), normalized_cov_params))
 }
 /// Transforms a matrix into a flat Vec.
-fn matrix_as_vec(matrix: &DMatrix<f64>) -> Vec<f64> {
+fn matrix_as_vec(matrix: DMatrix<f64>) -> Vec<f64> {
     let mut vector = Vec::new();
     for row_index in 0..matrix.nrows() {
         let row = matrix.row(row_index);
