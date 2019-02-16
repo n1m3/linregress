@@ -384,7 +384,37 @@ fn inc_beta(a: f64, b: f64, x: f64) -> f64 {
     } else {
         xc = w;
     }
-    unimplemented!();
+    let y = x * (a + b - 2.0) - (a - 1.0);
+    if y < 0. {
+        w = inc_bcf(a, b, x);
+    } else {
+        w = inc_bd(a, b, x) / xc;
+    }
+    let mut y = a * x.ln();
+    let mut t = b * xc.ln();
+    if a + b < MAX_GAMMA && y.abs() < MAX_LOG && t.abs() < MAX_LOG {
+        t = xc.powf(b);
+        t *= x.powf(a);
+        t /= a;
+        t *= w;
+        t *= 1.0 / beta(a, b);
+    } else {
+        y += t - ln_beta(a, b);
+        y += (w / a).ln();
+        if y < MIN_LOG {
+            t = 0.;
+        } else {
+            t = y.exp();
+        }
+    }
+    if was_swapped {
+        if t <= MACHEP {
+            t = 1. - MACHEP;
+        } else {
+            t = 1. - t;
+        }
+    }
+    t
 }
 /// Helper function for inc_beta
 fn inc_bcf(a: f64, b: f64, x: f64) -> f64 {
@@ -629,6 +659,6 @@ mod tests {
         // a * x <= 1.0 && x <= 0.95
         assert_almost_equal(inc_beta(1.0, 3.0, 0.6), 0.063999999);
         // a * x > 1.0 && x <= 0.95
-        dbg!(inc_beta(4.0, 3.0, 0.6));
+        assert_almost_equal(inc_beta(4.0, 3.0, 0.6), 0.544319999);
     }
 }
