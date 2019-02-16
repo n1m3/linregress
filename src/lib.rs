@@ -4,7 +4,7 @@ use nalgebra::{DMatrix, DVector, RowDVector};
 use std::collections::HashMap;
 use std::iter;
 
-pub mod special_functions;
+mod special_functions;
 use special_functions::stdtr;
 
 /// A builder to create and fit linear regression model.
