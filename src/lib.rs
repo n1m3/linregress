@@ -1,3 +1,65 @@
+/*!
+  Crate `linregress` provides an easy to use implementatom of ordinary
+  least squared linear regression.
+
+  The builder [`FormulaRegressionBuilder`] is used to construct a model from a simple [`HashMap`]
+  representing a table of data and a R-style formula. Currently only very simple formula are supported,
+  see [`FormulaRegressionBuilder.formula`] for details.
+
+  # Example
+
+  ```
+  use std::collections::HashMap;
+  use linregress::FormulaRegressionBuilder;
+
+  # use failure::Error;
+  # fn main() -> Result<(), Error> {
+  let mut data = HashMap::new();
+  data.insert("Y".to_string(), vec![1.,2. ,3. , 4., 5.]);
+  data.insert("X1".to_string(), vec![5., 4., 3., 2., 1.]);
+  data.insert("X2".to_string(), vec![729.53, 439.0367, 42.054, 1., 0.]);
+  data.insert("X3".to_string(), vec![258.589, 616.297, 215.061, 498.361, 0.]);
+  let formula = "Y ~ X1 + X2 + X3";
+  let model = FormulaRegressionBuilder::new()
+      .data(&data)
+      .formula(formula)
+      .fit()?;
+  let paramters = model.parameters;
+  let standard_errors = model.se;
+  let pvalues = model.pvalues;
+  assert_eq!(
+      paramters.pairs(),
+      vec![
+          ("X1".to_string(), -0.9999999999999745),
+          ("X2".to_string(), 0.00000000000000005637851296924623),
+          ("X3".to_string(), 0.00000000000000008283304597789254),
+      ]
+  );
+  assert_eq!(
+      standard_errors.pairs(),
+      vec![
+          ("X1".to_string(), 0.00000000000019226371555402852),
+          ("X2".to_string(), 0.0000000000000008718958950659518),
+          ("X3".to_string(), 0.0000000000000005323837152041135),
+      ]
+  );
+  assert_eq!(
+      pvalues.pairs(),
+      vec![
+          ("X1".to_string(), 0.00000000000012239888283055414),
+          ("X2".to_string(), 0.9588921357097694),
+          ("X3".to_string(), 0.9017368322742073),
+      ]
+  );
+  # Ok(())
+  # }
+  ```
+
+  [`FormulaRegressionBuilder`]: struct.FormulaRegressionBuilder.html
+  [`HashMap`]: https://doc.rust-lang.org/std/collections/struct.HashMap.html
+  [`FormulaRegressionBuilder.formula`]: struct.FormulaRegressionBuilder.html#method.formula
+*/
+
 #![warn(rust_2018_idioms)]
 use failure::{bail, err_msg, Error};
 use nalgebra::{DMatrix, DVector, RowDVector};
