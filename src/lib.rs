@@ -305,6 +305,46 @@ fn get_sum_of_products(matrix: &DMatrix<f64>, vector: &RowDVector<f64>) -> DMatr
     }
     DMatrix::from_vec(matrix.nrows(), 1, v)
 }
+const MAX_GAMMA: f64 = 171.624376956302725;
+const MINLOG: f64 = -7.08396418532264106224E2;
+const MAXLOG: f64 = 7.09782712893383996843E2;
+const MACHEP: f64 = 0.11102230246251565E-15;
+const BIG: f64 = 4.503599627370496E15;
+const BIG_INVERSE: f64 = 2.22044604925031308085E-16;
+/// Power series for incomplete beta integral.
+fn pseries(a: f64, b: f64, x: f64) -> f64 {
+    assert!(a > 0. && b > 0. && x > 0. && x < 1.);
+    let a_inverse = 1. / a;
+    let mut u = (1. - b) * x;
+    let mut v = u / (a + 1.0);
+    let t1 = v;
+    let mut t = u;
+    let mut n = 2.0;
+    let mut s = 0.0;
+    let z = MACHEP * a_inverse;
+    while v.abs() > z {
+        u = (n - b) * x / n;
+        t *= u;
+        v = t / (a + n);
+        s += v;
+        n += 1.0;
+    }
+    s += t1;
+    s += a_inverse;
+    u = a * x.ln();
+    if (a + b) < MAX_GAMMA && u.abs() < MAXLOG {
+        t = 1.0 / beta(a, b);
+        s = s * t * x.powf(a);
+    } else {
+        t = -ln_beta(a, b) + u + s.ln();
+        if t < MINLOG {
+            s = 0.0;
+        } else {
+            s = t.exp();
+        }
+    }
+    s
+}
 /// Calculates the value of the beta function for `a` and `b`.
 ///
 /// Returns infinity for a <= 0.0 or b <= 0.0 rather than panic.
@@ -395,6 +435,9 @@ mod tests {
         assert_eq!(ln_beta(7., 2.3456), -4.589971309681085);
         assert_eq!(ln_beta(-5., 2.3456), std::f64::INFINITY);
         assert_eq!(ln_beta(-0.1, 2.3456), std::f64::INFINITY);
-
+    }
+    #[test]
+    fn test_pseries() {
+        assert_almost_equal(pseries(1.0, 2.0, 0.2), 0.36);
     }
 }
