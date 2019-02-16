@@ -193,7 +193,7 @@ impl FormulaRegressionBuilder {
         //
         let output_matrix = DMatrix::from_vec(input_vector.len(), outputs.len() + 1, output_matrix);
         let (model_parameter, singular_values, normalized_cov_params) =
-            fit_ols_pinv(&input_vector, &output_matrix)?;
+            fit_ols_pinv(input_vector.to_owned(), output_matrix.to_owned())?;
         let outputs: Vec<_> = outputs.iter().map(|x| x.to_string()).collect();
         RegressionModel::try_from_regression_parameters(
             &input_vector,
@@ -365,12 +365,11 @@ impl RegressionParameters {
 ///
 /// Returns a tuple of the form `(model_parameter, singular_values, normalized_cov_params)` as `Result`.
 fn fit_ols_pinv(
-    inputs: &RowDVector<f64>,
-    outputs: &DMatrix<f64>,
+    inputs: RowDVector<f64>,
+    outputs: DMatrix<f64>,
 ) -> Result<(DMatrix<f64>, DVector<f64>, DMatrix<f64>), Error> {
     let singular_values = &outputs.to_owned().svd(false, false).singular_values;
     let pinv = outputs
-        .to_owned()
         .pseudo_inverse(0.)
         .map_err(|_| err_msg("Taking the pinv of the output matrix failed"))?;
     let normalized_cov_params = &pinv * &pinv.transpose();
