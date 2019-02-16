@@ -328,6 +328,11 @@ fn ln_beta(a: f64, b: f64) -> f64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    fn assert_almost_equal(a: f64, b: f64) {
+        if (a - b).abs() > 1.0E-6 {
+            panic!("{:?} vs {:?}", a, b);
+        }
+    }
     #[test]
     fn test_pinv_with_formula_builder() {
         use std::collections::HashMap;
@@ -376,7 +381,7 @@ mod tests {
     #[test]
     fn test_beta() {
         assert_eq!(beta(0., 5.), std::f64::INFINITY);
-        assert_eq!(beta(1., 5.), 0.20000000000000148);
+        assert_almost_equal(beta(1., 5.), 0.2);
         assert_eq!(beta(7., 5.), 0.00043290043290043333);
         assert_eq!(beta(7., 2.3456), 0.010153149666293021);
         assert_eq!(beta(-5., 2.3456), std::f64::INFINITY);
