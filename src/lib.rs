@@ -21,7 +21,7 @@
   data.insert("X3".to_string(), vec![258.589, 616.297, 215.061, 498.361, 0.]);
   let formula = "Y ~ X1 + X2 + X3";
   let model = FormulaRegressionBuilder::new()
-      .data(&data)
+      .data(data)
       .formula(formula)
       .fit()?;
   let paramters = model.parameters;
@@ -87,7 +87,7 @@ use special_functions::stdtr;
 /// let mut data = HashMap::new();
 /// data.insert("Y".to_string(), vec![1.,2. ,3. , 4.]);
 /// data.insert("X".to_string(), vec![4., 3., 2., 1.]);
-/// let model = FormulaRegressionBuilder::new().data(&data).formula("Y ~ X").fit()?;
+/// let model = FormulaRegressionBuilder::new().data(data).formula("Y ~ X").fit()?;
 /// assert_eq!(model.parameters.intercept_value, 5.0);
 /// assert_eq!(model.parameters.regressor_values[0], -0.9999999999999993);
 /// assert_eq!(model.parameters.regressor_names[0], "X");
@@ -122,8 +122,8 @@ impl FormulaRegressionBuilder {
     /// [`String`]: https://doc.rust-lang.org/std/string/struct.String.html
     /// [`str`]: https://doc.rust-lang.org/std/primitive.str.html
     /// [`to_string`]: https://doc.rust-lang.org/std/string/trait.ToString.html
-    pub fn data(mut self, data: &HashMap<String, Vec<f64>>) -> Self {
-        self.data = Some(data.to_owned());
+    pub fn data(mut self, data: HashMap<String, Vec<f64>>) -> Self {
+        self.data = Some(data);
         self
     }
     /// Set the formula to use for the regression.
@@ -344,7 +344,7 @@ impl RegressionParameters {
     /// data.insert("Y".to_string(), vec![1.,2. ,3. , 4.]);
     /// data.insert("X1".to_string(), vec![4., 3., 2., 1.]);
     /// data.insert("X2".to_string(), vec![1., 2., 3., 4.]);
-    /// let model = FormulaRegressionBuilder::new().data(&data).formula("Y ~ X1 + X2").fit()?;
+    /// let model = FormulaRegressionBuilder::new().data(data).formula("Y ~ X1 + X2").fit()?;
     /// let pairs = model.parameters.pairs();
     /// assert_eq!(pairs[0], ("X1".to_string(), -0.0370370370370372));
     /// assert_eq!(pairs[1], ("X2".to_string(), 0.9629629629629629));
@@ -451,7 +451,7 @@ mod tests {
         data.insert("X1".to_string(), outputs1);
         data.insert("X2".to_string(), outputs2);
         let regression = FormulaRegressionBuilder::new()
-            .data(&data)
+            .data(data)
             .formula("Y ~ X1 + X2")
             .fit()
             .expect("Fitting model failed");
