@@ -112,18 +112,59 @@ impl FormulaRegressionBuilder {
             formula: None,
         }
     }
-    /// Set the table of data to be used for the regression.
+    /// Set the data to be used for the regression.
     ///
-    /// Note that the keys of the HashMap must be of the type [`String`].
+    /// Any type that implements the [`IntoIterator`] trait can be used for the data.
+    /// This could for example be a [`Hashmap`] or a [`Vec`].
     ///
-    /// If you have keys of the type [`str`], simply use their [`to_string`] method
-    /// to convert them.
+    /// The iterator must consist of tupels of the form `(S, Vec<f64>)` where
+    /// `S` is a type that implements `Into<String>`, such as [`String`] or [`str`].
     ///
+    /// You can think of this format as the representation of a table of data where
+    /// each tuple `(S, Vec<f64>)` represents a row. The `S` is the header or label of the row
+    /// and the `Vec<f64>` contains the data of the row.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::collections::HashMap;
+    /// use linregress::FormulaRegressionBuilder;
+    ///
+    /// # use failure::Error;
+    /// # fn main() -> Result<(), Error> {
+    /// let regression_builder = FormulaRegressionBuilder::new().formula("Y ~ X");
+    ///
+    /// let mut data1 = HashMap::new();
+    /// data1.insert("Y", vec![1.,2. ,3. , 4.]);
+    /// data1.insert("X", vec![4., 3., 2., 1.]);
+    /// let model1 = regression_builder.to_owned().data(data1).fit()?;
+    ///
+    /// let Y = vec![1., 2., 3., 4.];
+    /// let X = vec![4., 3., 2., 1.];
+    /// let data2 = vec![("X", X), ("Y", Y)];
+    /// let model2 = regression_builder.data(data2).fit()?;
+    ///
+    /// assert_eq!(model1.parameters.regressor_values, model2.parameters.regressor_values);
+    /// assert_eq!(model1.parameters.regressor_names, model2.parameters.regressor_names);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// [`IntoIterator`]: https://doc.rust-lang.org/std/iter/trait.IntoIterator.html
+    /// [`Hashmap`]: https://doc.rust-lang.org/std/collections/struct.HashMap.html
+    /// [`Vec`]: https://doc.rust-lang.org/std/vec/struct.Vec.html
     /// [`String`]: https://doc.rust-lang.org/std/string/struct.String.html
     /// [`str`]: https://doc.rust-lang.org/std/primitive.str.html
-    /// [`to_string`]: https://doc.rust-lang.org/std/string/trait.ToString.html
-    pub fn data(mut self, data: HashMap<String, Vec<f64>>) -> Self {
-        self.data = Some(data);
+    pub fn data<I, S>(mut self, data: I) -> Self
+    where
+        I: IntoIterator<Item = (S, Vec<f64>)>,
+        S: Into<String>,
+    {
+        let mut temp = HashMap::new();
+        for (key, value) in data {
+            temp.insert(key.into(), value);
+        }
+        self.data = Some(temp);
         self
     }
     /// Set the formula to use for the regression.
