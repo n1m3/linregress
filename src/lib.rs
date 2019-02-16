@@ -307,6 +307,17 @@ fn get_sum_of_products(matrix: &DMatrix<f64>, vector: &RowDVector<f64>) -> DMatr
 #[cfg(test)]
 mod tests {
     use super::*;
+    fn assert_almost_equal(a: f64, b: f64) {
+        if (a - b).abs() > 1.0E-14 {
+            panic!("\n{:?} vs\n{:?}", a, b);
+        }
+    }
+    fn assert_slices_almost_equal(a: &[f64], b: &[f64]) {
+        assert_eq!(a.len(), b.len());
+        for (x, y) in a.iter().cloned().zip(b.iter().cloned()).collect::<Vec<_>>() {
+            assert_almost_equal(x, y);
+        }
+    }
     #[test]
     fn test_pinv_with_formula_builder() {
         use std::collections::HashMap;
@@ -349,7 +360,7 @@ mod tests {
         assert_eq!(regression.ssr, ssr);
         assert_eq!(regression.rsquared, rsquared);
         assert_eq!(regression.rsquared_adj, rsquared_adj);
-        assert_eq!(regression.pvalues, pvalues);
+        assert_slices_almost_equal(&regression.pvalues, &pvalues);
         assert_eq!(regression.residuals, residuals);
     }
 }
