@@ -138,12 +138,19 @@ impl FormulaRegressionBuilder {
 ///
 #[derive(Debug)]
 pub struct RegressionModel {
+    /// The models intercept and slopes (also known as betas).
     pub parameters: RegressionParameters,
+    /// The standard errors of the parameter estimates.
     pub se: Vec<f64>,
+    /// Sum of squared residuals.
     pub ssr: f64,
+    /// R-squared of the model.
     pub rsquared: f64,
+    /// Adjusted R-squared of the model.
     pub rsquared_adj: f64,
+    /// The two-tailed p values for the t-stats of the params.
     pub pvalues: Vec<f64>,
+    /// The residuals of the model.
     pub residuals: Vec<f64>,
 }
 impl RegressionModel {
