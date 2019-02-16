@@ -161,7 +161,6 @@ impl RegressionModel {
         let input_matrix = DMatrix::from_vec(inputs.len(), 1, input_vec);
         let residuals = &input_matrix - (outputs * parameters.to_owned());
         let ssr = residuals.dot(&residuals);
-        let p = outputs.ncols() - 1;
         let n = inputs.ncols();
         let df_resid = n - rank;
         // TODO XXX add test that catches the differences between this correct version and
@@ -185,7 +184,6 @@ impl RegressionModel {
             .cloned()
             .map(|x| (1. - students_t.cdf(x)) * 2.)
             .collect();
-        let tvalue = tvalues[1];
         // Convert these from interal Matrix types to user facing types
         let intercept = parameters[0];
         let slopes: Vec<_> = parameters.iter().cloned().skip(1).collect();
