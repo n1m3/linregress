@@ -1,11 +1,11 @@
 #![warn(rust_2018_idioms)]
 use failure::{bail, err_msg, Error};
 use nalgebra::{DMatrix, DVector, RowDVector};
-use statrs::distribution::{StudentsT, Univariate};
 use std::collections::HashMap;
 use std::iter;
 
 pub mod special_functions;
+use special_functions::stdtr;
 
 /// A builder to create and fit linear regression model.
 ///
@@ -178,11 +178,10 @@ impl RegressionModel {
             .zip(matrix_as_vec(&se))
             .map(|(x, y)| x / y)
             .collect();
-        let students_t = StudentsT::new(0.0, 1.0, df_resid as f64)?;
         let pvalues: Vec<_> = tvalues
             .iter()
             .cloned()
-            .map(|x| (1. - students_t.cdf(x)) * 2.)
+            .map(|x| stdtr(df_resid as i64, -(x.abs())) * 2.)
             .collect();
         // Convert these from interal Matrix types to user facing types
         let intercept = parameters[0];
