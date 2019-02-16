@@ -334,8 +334,12 @@ mod tests {
             .fit()
             .expect("Fitting model failed");
 
-        let model_parameters = vec![0.09523809523809511, 0.5059523809523809, 0.25595238095238104];
-        let se = vec![0.015457637291218271, 0.1417242813072997, 0.1417242813072997];
+        let model_parameters = vec![0.09523809523809523, 0.5059523809523809, 0.2559523809523808];
+        let se = vec![
+            0.015457637291218289,
+            0.1417242813072997,
+            0.14172428130729975,
+        ];
         let ssr = 9.107142857142858;
         let rsquared = 0.16118421052631582;
         let rsquared_adj = -0.006578947368421018;
@@ -345,22 +349,22 @@ mod tests {
             0.13074580446389245,
         ];
         let residuals = vec![
-            -1.3928571428571432,
-            0.35714285714285676,
-            1.1071428571428568,
-            1.8571428571428572,
-            -1.3928571428571428,
+            -1.392857142857142,
+            0.3571428571428581,
+            1.1071428571428577,
+            1.8571428571428577,
+            -1.3928571428571423,
             -0.6428571428571423,
             0.10714285714285765,
         ];
-        assert_eq!(regression.parameters.intercept, model_parameters[0]);
-        assert_eq!(regression.parameters.slopes[0], model_parameters[1]);
-        assert_eq!(regression.parameters.slopes[1], model_parameters[2]);
-        assert_eq!(regression.se, se);
-        assert_eq!(regression.ssr, ssr);
-        assert_eq!(regression.rsquared, rsquared);
-        assert_eq!(regression.rsquared_adj, rsquared_adj);
+        assert_almost_equal(regression.parameters.intercept, model_parameters[0]);
+        assert_almost_equal(regression.parameters.slopes[0], model_parameters[1]);
+        assert_almost_equal(regression.parameters.slopes[1], model_parameters[2]);
+        assert_slices_almost_equal(&regression.se, &se);
+        assert_almost_equal(regression.ssr, ssr);
+        assert_almost_equal(regression.rsquared, rsquared);
+        assert_almost_equal(regression.rsquared_adj, rsquared_adj);
         assert_slices_almost_equal(&regression.pvalues, &pvalues);
-        assert_eq!(regression.residuals, residuals);
+        assert_slices_almost_equal(&regression.residuals, &residuals);
     }
 }
