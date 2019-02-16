@@ -1,11 +1,11 @@
 use statrs::function::beta::{beta, ln_beta};
 
-const MAX_GAMMA: f64 = 171.624376956302725;
-const MIN_LOG: f64 = -7.08396418532264106224E2;
-const MAX_LOG: f64 = 7.09782712893383996843E2;
-const MACHEP: f64 = 0.11102230246251565E-15;
-const BIG: f64 = 4.503599627370496E15;
-const BIG_INVERSE: f64 = 2.22044604925031308085E-16;
+const MAX_GAMMA: f64 = 171.624_376_956_302_7;
+const MIN_LOG: f64 = -7.083_964_185_322_641E2;
+const MAX_LOG: f64 = 7.097_827_128_933E2;
+const MACHEP: f64 = 1.110_223_024_625_156_5E-16;
+const BIG: f64 = 4.503_599_627_370_496E15;
+const BIG_INVERSE: f64 = 2.220_446_049_250_313E-16;
 
 /// Computes the integral from minus infinity to t of the Student
 /// t distribution with integer k > 0 degrees of freedom
