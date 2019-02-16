@@ -246,3 +246,25 @@ fn inc_bd(a: f64, b: f64, x: f64) -> f64 {
     }
     answer
 }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    fn assert_almost_equal(a: f64, b: f64) {
+        if (a - b).abs() > 1.0E-6 {
+            panic!("{:?} vs {:?}", a, b);
+        }
+    }
+    #[test]
+    fn test_inc_beta() {
+        assert_eq!(inc_beta(1.0, 2.0, 0.0), 0.0);
+        assert_eq!(inc_beta(1.0, 2.0, 1.0), 1.0);
+        assert_almost_equal(inc_beta(1.0, 2.0, 0.2), 0.36);
+        assert_almost_equal(inc_beta(5.0, 2.0, 0.5), 0.109375);
+        // b * x > 1
+        // x > a / (a + b)
+        // a * x <= 1.0 && x <= 0.95
+        assert_almost_equal(inc_beta(1.0, 3.0, 0.6), 0.063999999);
+        // a * x > 1.0 && x <= 0.95
+        assert_almost_equal(inc_beta(4.0, 3.0, 0.6), 0.544319999);
+    }
+}
