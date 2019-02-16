@@ -9,9 +9,6 @@ const BIG_INVERSE: f64 = 2.22044604925031308085E-16;
 
 /// Returns incomplete beta integral of the arguments, evaluated
 /// from zero to x.
-///
-/// Based on the C implementation in the cephes library (http://www.netlib.org/cephes/)
-/// by Stephen L. Moshier
 pub fn inc_beta(a: f64, b: f64, x: f64) -> f64 {
     assert!(a > 0. && b > 0.);
     assert!(x >= 0. || x <= 1.0);
