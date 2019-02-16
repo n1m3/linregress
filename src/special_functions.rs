@@ -263,8 +263,11 @@ mod tests {
         // b * x > 1
         // x > a / (a + b)
         // a * x <= 1.0 && x <= 0.95
-        assert_almost_equal(inc_beta(1.0, 3.0, 0.6), 0.063999999);
+        assert_almost_equal(inc_beta(1.0, 3.0, 0.6), 0.9359999999999999);
         // a * x > 1.0 && x <= 0.95
-        assert_almost_equal(inc_beta(4.0, 3.0, 0.6), 0.544319999);
+        assert_almost_equal(inc_beta(4.0, 3.0, 0.6), 0.54432);
+
+        assert_almost_equal(inc_beta(2.0, 3.0, 0.5),0.6875);
+
     }
 }
