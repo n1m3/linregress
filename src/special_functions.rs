@@ -1,3 +1,5 @@
+// Yes clippy this stuff looks like a computer science text book ໒( ݓ Ĺ̯ ݓ )७
+#![allow(clippy::many_single_char_names)]
 use statrs::function::beta::{beta, ln_beta};
 use std::mem::swap;
 
