@@ -23,12 +23,12 @@ use special_functions::stdtr;
 /// # use failure::Error;
 /// # fn main() -> Result<(), Error> {
 /// let mut data = HashMap::new();
-/// data.insert("inputs".to_string(), vec![1.,2. ,3. , 4.]);
-/// data.insert("outputs".to_string(), vec![4., 3., 2., 1.]);
-/// let model = FormulaRegressionBuilder::new().data(&data).formula("inputs ~ outputs").fit()?;
+/// data.insert("Y".to_string(), vec![1.,2. ,3. , 4.]);
+/// data.insert("X".to_string(), vec![4., 3., 2., 1.]);
+/// let model = FormulaRegressionBuilder::new().data(&data).formula("Y ~ X").fit()?;
 /// assert_eq!(model.parameters.intercept_value, 5.0);
 /// assert_eq!(model.parameters.regressor_values[0], -0.9999999999999993);
-/// assert_eq!(model.parameters.regressor_names[0], "outputs");
+/// assert_eq!(model.parameters.regressor_names[0], "X");
 /// # Ok(())
 /// # }
 /// ```
