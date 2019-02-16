@@ -5,8 +5,31 @@ use statrs::distribution::{StudentsT, Univariate};
 use std::collections::HashMap;
 use std::iter;
 
-/// A builder to create a linear regression model
+/// A builder to create and fit linear regression model.
 ///
+/// Given a dataset and a regression formula this builder
+/// will produce an ordinary least squared linear regression model.
+///
+/// The pseudo inverse method is used to fit the model.
+///
+/// # Usage
+///
+/// ```
+/// use std::collections::HashMap;
+/// use linregress::FormulaRegressionBuilder;
+///
+/// # use failure::Error;
+/// # fn main() -> Result<(), Error> {
+/// let mut data = HashMap::new();
+/// data.insert("inputs".to_string(), vec![1.,2. ,3. , 4.]);
+/// data.insert("outputs".to_string(), vec![4., 3., 2., 1.]);
+/// let model = FormulaRegressionBuilder::new().data(&data).formula("inputs ~ outputs").fit()?;
+/// assert_eq!(model.parameters.intercept, 5.0);
+/// assert_eq!(model.parameters.slopes[0], -0.9999999999999993);
+/// assert_eq!(model.parameters.slope_names[0], "outputs");
+/// # Ok(())
+/// # }
+/// ```
 #[derive(Debug)]
 pub struct FormulaRegressionBuilder {
     data: Option<HashMap<String, Vec<f64>>>,
@@ -18,6 +41,7 @@ impl Default for FormulaRegressionBuilder {
     }
 }
 impl FormulaRegressionBuilder {
+    /// Create as new FormulaRegressionBuilder with no data or formula set.
     pub fn new() -> Self {
         FormulaRegressionBuilder {
             data: None,
@@ -28,10 +52,27 @@ impl FormulaRegressionBuilder {
         self.data = Some(data.to_owned());
         self
     }
+    /// Set the formula to use for the regression.
+    ///
+    /// The expected format is "<regressand> ~ <regressor 1> + <regressor 2>".
+    ///
+    /// E.g. for a regressand named Y and three regressors named A, B and C
+    /// the correct format would be "Y ~ A + B + C".
+    ///
+    /// Note that there is currently no special support for categorical variables.
+    /// So if you have a categorical variable with more than two distinct values
+    /// you will need to perform "dummy coding" yourself.
     pub fn formula<T: Into<String>>(mut self, formula: T) -> Self {
         self.formula = Some(formula.into());
         self
     }
+    /// Fits the model and returns a [`RegressionModel`] if successful.
+    /// You need to set the data with [`data`] and a formula with [`formula`]
+    /// before you can use it.
+    ///
+    /// [`RegressionModel`]: struct.RegressionModel.html
+    /// [`data`]: struct.FormulaRegressionBuilder.html#method.data
+    /// [`formula`]: struct.FormulaRegressionBuilder.html#method.formula
     pub fn fit(self) -> Result<RegressionModel, Error> {
         let data: Result<_, Error> = self
             .data
@@ -172,6 +213,29 @@ impl RegressionModel {
     }
 }
 /// The intercept and slope(s) of a fitted regression model
+///
+/// The slopes and names of the regressors are given in the same order.
+///
+/// You can use this to obtain pairs like this:
+///
+/// ```
+/// use std::collections::HashMap;
+/// use linregress::FormulaRegressionBuilder;
+///
+/// # use failure::Error;
+/// # fn main() -> Result<(), Error> {
+/// let mut data = HashMap::new();
+/// data.insert("Y".to_string(), vec![1.,2. ,3. , 4.]);
+/// data.insert("X1".to_string(), vec![4., 3., 2., 1.]);
+/// data.insert("X2".to_string(), vec![1., 2., 3., 4.]);
+/// let model = FormulaRegressionBuilder::new().data(&data).formula("Y ~ X1 + X2").fit()?;
+/// let params = model.parameters;
+/// let pairs: Vec<_> = params.slope_names.iter().zip(params.slopes).collect();
+/// assert_eq!(pairs[0], (&"X1".to_string(), -0.0370370370370372));
+/// assert_eq!(pairs[1], (&"X2".to_string(), 0.9629629629629629));
+/// # Ok(())
+/// # }
+/// ```
 #[derive(Debug)]
 pub struct RegressionParameters {
     pub intercept: f64,
