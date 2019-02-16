@@ -50,6 +50,16 @@ impl FormulaRegressionBuilder {
             formula: None,
         }
     }
+    /// Set the table of data to be used for the regression.
+    ///
+    /// Note that the keys of the HashMap must be of the type [`String`].
+    ///
+    /// If you have keys of the type [`str`], simply use their [`to_string`] method
+    /// to convert them.
+    ///
+    /// [`String`]: https://doc.rust-lang.org/std/string/struct.String.html
+    /// [`str`]: https://doc.rust-lang.org/std/primitive.str.html
+    /// [`to_string`]: https://doc.rust-lang.org/std/string/trait.ToString.html
     pub fn data(mut self, data: &HashMap<String, Vec<f64>>) -> Self {
         self.data = Some(data.to_owned());
         self
