@@ -228,28 +228,28 @@ pub struct RegressionParameters {
     pub regressor_names: Vec<String>,
     pub regressor_values: Vec<f64>,
 }
-/// Returns the parameters as a Vec of tuples of the form `(name: String, value: f64)`.
-///
-/// # Usage
-///
-/// ```
-/// use std::collections::HashMap;
-/// use linregress::FormulaRegressionBuilder;
-///
-/// # use failure::Error;
-/// # fn main() -> Result<(), Error> {
-/// let mut data = HashMap::new();
-/// data.insert("Y".to_string(), vec![1.,2. ,3. , 4.]);
-/// data.insert("X1".to_string(), vec![4., 3., 2., 1.]);
-/// data.insert("X2".to_string(), vec![1., 2., 3., 4.]);
-/// let model = FormulaRegressionBuilder::new().data(&data).formula("Y ~ X1 + X2").fit()?;
-/// let pairs = model.parameters.pairs();
-/// assert_eq!(pairs[0], ("X1".to_string(), -0.0370370370370372));
-/// assert_eq!(pairs[1], ("X2".to_string(), 0.9629629629629629));
-/// # Ok(())
-/// # }
-/// ```
 impl RegressionParameters {
+    /// Returns the parameters as a Vec of tuples of the form `(name: String, value: f64)`.
+    ///
+    /// # Usage
+    ///
+    /// ```
+    /// use std::collections::HashMap;
+    /// use linregress::FormulaRegressionBuilder;
+    ///
+    /// # use failure::Error;
+    /// # fn main() -> Result<(), Error> {
+    /// let mut data = HashMap::new();
+    /// data.insert("Y".to_string(), vec![1.,2. ,3. , 4.]);
+    /// data.insert("X1".to_string(), vec![4., 3., 2., 1.]);
+    /// data.insert("X2".to_string(), vec![1., 2., 3., 4.]);
+    /// let model = FormulaRegressionBuilder::new().data(&data).formula("Y ~ X1 + X2").fit()?;
+    /// let pairs = model.parameters.pairs();
+    /// assert_eq!(pairs[0], ("X1".to_string(), -0.0370370370370372));
+    /// assert_eq!(pairs[1], ("X2".to_string(), 0.9629629629629629));
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn pairs(self) -> Vec<(String, f64)> {
         self.regressor_names.iter().zip(self.regressor_values).map(|(x, y)| (x.to_owned(), y)).collect()
     }
