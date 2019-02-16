@@ -150,7 +150,7 @@ impl RegressionModel {
     fn try_from_regression_parameters(
         inputs: &RowDVector<f64>,
         outputs: &DMatrix<f64>,
-        output_names: &Vec<String>,
+        output_names: &[String],
         parameters: &DMatrix<f64>,
         singular_values: &DVector<f64>,
         normalized_cov_params: &DMatrix<f64>,
