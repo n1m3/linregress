@@ -26,9 +26,9 @@ use special_functions::stdtr;
 /// data.insert("inputs".to_string(), vec![1.,2. ,3. , 4.]);
 /// data.insert("outputs".to_string(), vec![4., 3., 2., 1.]);
 /// let model = FormulaRegressionBuilder::new().data(&data).formula("inputs ~ outputs").fit()?;
-/// assert_eq!(model.parameters.intercept, 5.0);
-/// assert_eq!(model.parameters.slopes[0], -0.9999999999999993);
-/// assert_eq!(model.parameters.slope_names[0], "outputs");
+/// assert_eq!(model.parameters.intercept_value, 5.0);
+/// assert_eq!(model.parameters.regressor_values[0], -0.9999999999999993);
+/// assert_eq!(model.parameters.regressor_names[0], "outputs");
 /// # Ok(())
 /// # }
 /// ```
@@ -199,9 +199,9 @@ impl RegressionModel {
             bail!("Number of slopes and output names is inconsistent");
         }
         let parameters = RegressionParameters {
-            intercept,
-            slopes,
-            slope_names: output_names.to_vec(),
+            intercept_value: intercept,
+            regressor_values: slopes,
+            regressor_names: output_names.to_vec(),
         };
         let se: Vec<_> = se.iter().cloned().collect();
         let residuals: Vec<_> = residuals.iter().cloned().collect();
@@ -217,11 +217,20 @@ impl RegressionModel {
         })
     }
 }
-/// The intercept and slope(s) of a fitted regression model
+/// A parameter of a fitted regression model given for the intercept and each regressor.
 ///
-/// The slopes and names of the regressors are given in the same order.
+/// The values and names of the regressors are given in the same order.
 ///
-/// You can use this to obtain pairs like this:
+/// You can obtain name value pairs using `pairs`.
+#[derive(Debug)]
+pub struct RegressionParameters {
+    pub intercept_value: f64,
+    pub regressor_names: Vec<String>,
+    pub regressor_values: Vec<f64>,
+}
+/// Returns the parameters as a Vec of tuples of the form `(name: String, value: f64)`.
+///
+/// # Usage
 ///
 /// ```
 /// use std::collections::HashMap;
@@ -234,18 +243,16 @@ impl RegressionModel {
 /// data.insert("X1".to_string(), vec![4., 3., 2., 1.]);
 /// data.insert("X2".to_string(), vec![1., 2., 3., 4.]);
 /// let model = FormulaRegressionBuilder::new().data(&data).formula("Y ~ X1 + X2").fit()?;
-/// let params = model.parameters;
-/// let pairs: Vec<_> = params.slope_names.iter().zip(params.slopes).collect();
-/// assert_eq!(pairs[0], (&"X1".to_string(), -0.0370370370370372));
-/// assert_eq!(pairs[1], (&"X2".to_string(), 0.9629629629629629));
+/// let pairs = model.parameters.pairs();
+/// assert_eq!(pairs[0], ("X1".to_string(), -0.0370370370370372));
+/// assert_eq!(pairs[1], ("X2".to_string(), 0.9629629629629629));
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Debug)]
-pub struct RegressionParameters {
-    pub intercept: f64,
-    pub slope_names: Vec<String>,
-    pub slopes: Vec<f64>,
+impl RegressionParameters {
+    pub fn pairs(self) -> Vec<(String, f64)> {
+        self.regressor_names.iter().zip(self.regressor_values).map(|(x, y)| (x.to_owned(), y)).collect()
+    }
 }
 
 /// Performs ordinary least squared linear regression using the pseudo inverse method to solve
@@ -368,9 +375,9 @@ mod tests {
             -0.6428571428571423,
             0.10714285714285765,
         ];
-        assert_almost_equal(regression.parameters.intercept, model_parameters[0]);
-        assert_almost_equal(regression.parameters.slopes[0], model_parameters[1]);
-        assert_almost_equal(regression.parameters.slopes[1], model_parameters[2]);
+        assert_almost_equal(regression.parameters.intercept_value, model_parameters[0]);
+        assert_almost_equal(regression.parameters.regressor_values[0], model_parameters[1]);
+        assert_almost_equal(regression.parameters.regressor_values[1], model_parameters[2]);
         assert_slices_almost_equal(&regression.se, &se);
         assert_almost_equal(regression.ssr, ssr);
         assert_almost_equal(regression.rsquared, rsquared);
