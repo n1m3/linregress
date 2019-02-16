@@ -345,6 +345,25 @@ fn pseries(a: f64, b: f64, x: f64) -> f64 {
     }
     s
 }
+/// Returns incomplete beta integral of the arguments, evaluated
+/// from zero to x.
+///
+/// Based on the C implementation in the cephes library (http://www.netlib.org/cephes/)
+/// by Stephen L. Moshier
+fn inc_beta(a: f64, b: f64, x: f64) -> f64 {
+    assert!(a > 0. && b > 0.);
+    assert!(x >= 0. || x <= 1.0);
+    if x == 0.0 {
+        return 0.0;
+    }
+    if x == 1.0 {
+        return 1.0;
+    }
+    if b * x <= 1.0 && x <= 0.95 {
+        return pseries(a, b, x);
+    }
+    unimplemented!();
+}
 /// Calculates the value of the beta function for `a` and `b`.
 ///
 /// Returns infinity for a <= 0.0 or b <= 0.0 rather than panic.
@@ -439,5 +458,11 @@ mod tests {
     #[test]
     fn test_pseries() {
         assert_almost_equal(pseries(1.0, 2.0, 0.2), 0.36);
+    }
+    #[test]
+    fn test_inc_beta() {
+        assert_eq!(inc_beta(1.0, 2.0, 0.0), 0.0);
+        assert_eq!(inc_beta(1.0, 2.0, 1.0), 1.0);
+        assert_almost_equal(inc_beta(1.0, 2.0, 0.2), 0.36);
     }
 }
