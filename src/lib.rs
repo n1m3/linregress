@@ -94,7 +94,7 @@ use special_functions::stdtr;
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FormulaRegressionBuilder {
     data: Option<HashMap<String, Vec<f64>>>,
     formula: Option<String>,
@@ -216,7 +216,7 @@ impl FormulaRegressionBuilder {
 ///
 ///[`RegressionParameters`]: struct.RegressionParameters.html
 ///[`FormulaRegressionBuilder.fit()`]: struct.FormulaRegressionBuilder.html#method.fit
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RegressionModel {
     /// The models intercept and slopes (also known as betas).
     pub parameters: RegressionParameters,
@@ -323,7 +323,7 @@ impl RegressionModel {
 ///
 /// [`RegressionModel`]: struct.RegressionModel.html
 /// [`pairs`]: struct.RegressionParameters.html#method.pairs
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RegressionParameters {
     pub intercept_value: f64,
     pub regressor_names: Vec<String>,
