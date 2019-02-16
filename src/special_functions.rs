@@ -1,4 +1,5 @@
 use statrs::function::beta::{beta, ln_beta};
+use std::mem::swap;
 
 const MAX_GAMMA: f64 = 171.624_376_956_302_7;
 const MIN_LOG: f64 = -7.083_964_185_322_641E2;
@@ -88,9 +89,7 @@ pub fn inc_beta(a: f64, b: f64, x: f64) -> f64 {
     // Swap a and b if x is greater than mean
     if x > a / (a + b) {
         was_swapped = true;
-        let temp = b;
-        b = a;
-        a = temp;
+        swap(&mut a, &mut b);
         x = w;
         if b * x <= 1.0 && x <= 0.95 {
             let mut t = pseries(a, b, x);
