@@ -152,6 +152,11 @@ pub struct RegressionModel {
     pub pvalues: Vec<f64>,
     /// The residuals of the model.
     pub residuals: Vec<f64>,
+    ///  A scale factor for the covariance matrix.
+    ///
+    ///  Note that the square root of `scale` is often
+    ///  called the standard error of the regression
+    pub scale: f64,
 }
 impl RegressionModel {
     fn try_from_regression_parameters(
@@ -170,9 +175,6 @@ impl RegressionModel {
         let ssr = residuals.dot(&residuals);
         let n = inputs.ncols();
         let df_resid = n - rank;
-        // TODO XXX add test that catches the differences between this correct version and
-        // the old version:
-        //  let scale = ssr / ((n - p) as f64);
         let scale = residuals.dot(&residuals) / df_resid as f64;
         let cov_params = normalized_cov_params.to_owned() * scale;
         let se = get_se_from_cov_params(&cov_params)?;
@@ -211,6 +213,7 @@ impl RegressionModel {
             rsquared_adj,
             pvalues,
             residuals,
+            scale,
         })
     }
 }
@@ -350,6 +353,7 @@ mod tests {
         let ssr = 9.107142857142858;
         let rsquared = 0.16118421052631582;
         let rsquared_adj = -0.006578947368421018;
+        let scale = 1.8214285714285716;
         let pvalues = vec![
             0.001639031204417556,
             0.016044083709847945,
@@ -373,5 +377,6 @@ mod tests {
         assert_almost_equal(regression.rsquared_adj, rsquared_adj);
         assert_slices_almost_equal(&regression.pvalues, &pvalues);
         assert_slices_almost_equal(&regression.residuals, &residuals);
+        assert_eq!(regression.scale, scale);
     }
 }
