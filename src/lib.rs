@@ -183,6 +183,9 @@ impl RegressionModel {
         let ssr = residuals.dot(&residuals);
         let n = inputs.ncols();
         let df_resid = n - rank;
+        if df_resid < 1 {
+            bail!("There are not enough residual degrees of freedom to perform statistics on this model");
+        }
         let scale = residuals.dot(&residuals) / df_resid as f64;
         let cov_params = normalized_cov_params.to_owned() * scale;
         let se = get_se_from_cov_params(&cov_params)?;
