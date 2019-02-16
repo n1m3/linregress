@@ -161,13 +161,16 @@ impl RegressionModel {
         let ssr = residuals.dot(&residuals);
         let p = outputs.ncols() - 1;
         let n = inputs.ncols();
-        let scale = ssr / ((n - p) as f64);
+        let df_resid = n - rank;
+        // TODO XXX add test that catches the differences between this correct version and
+        // the old version:
+        //  let scale = ssr / ((n - p) as f64);
+        let scale = residuals.dot(&residuals) / df_resid as f64;
         let cov_params = normalized_cov_params.to_owned() * scale;
         let se = get_se_from_cov_params(&cov_params)?;
         let centered_input_matrix = subtract_value_from_matrix(&input_matrix, input_matrix.mean());
         let centered_tss = &centered_input_matrix.dot(&centered_input_matrix);
         let rsquared = 1. - (ssr / centered_tss);
-        let df_resid = n - rank;
         let rsquared_adj = 1. - ((n - 1) as f64 / df_resid as f64 * (1. - rsquared));
         let tvalues: Vec<_> = matrix_as_vec(parameters)
             .iter()
