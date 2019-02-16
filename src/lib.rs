@@ -2,6 +2,7 @@
 use failure::{bail, err_msg, Error};
 use nalgebra::{DMatrix, DVector, RowDVector};
 use statrs::distribution::{StudentsT, Univariate};
+use statrs::function;
 use std::collections::HashMap;
 use std::iter;
 
@@ -304,6 +305,26 @@ fn get_sum_of_products(matrix: &DMatrix<f64>, vector: &RowDVector<f64>) -> DMatr
     }
     DMatrix::from_vec(matrix.nrows(), 1, v)
 }
+/// Calculates the value of the beta function for `a` and `b`.
+///
+/// Returns infinity for a <= 0.0 or b <= 0.0 rather than panic.
+fn beta(a: f64, b: f64) -> f64 {
+    if a <= 0.0 || b <= 0.0 {
+        std::f64::INFINITY
+    } else {
+        function::beta::beta(a, b)
+    }
+}
+/// Calculates the natural logarithm of the beta function for `a` and `b`.
+///
+/// Returns infinity for a <= 0.0 or b <= 0.0 rather than panic.
+fn ln_beta(a: f64, b: f64) -> f64 {
+    if a <= 0.0 || b <= 0.0 {
+        std::f64::INFINITY
+    } else {
+        function::beta::ln_beta(a, b)
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -351,5 +372,24 @@ mod tests {
         assert_eq!(regression.rsquared_adj, rsquared_adj);
         assert_eq!(regression.pvalues, pvalues);
         assert_eq!(regression.residuals, residuals);
+    }
+    #[test]
+    fn test_beta() {
+        assert_eq!(beta(0., 5.), std::f64::INFINITY);
+        assert_eq!(beta(1., 5.), 0.20000000000000148);
+        assert_eq!(beta(7., 5.), 0.00043290043290043333);
+        assert_eq!(beta(7., 2.3456), 0.010153149666293021);
+        assert_eq!(beta(-5., 2.3456), std::f64::INFINITY);
+        assert_eq!(beta(-0.1, 2.3456), std::f64::INFINITY);
+    }
+    #[test]
+    fn test_ln_beta() {
+        assert_eq!(ln_beta(0., 5.), std::f64::INFINITY);
+        assert_eq!(ln_beta(1., 5.), -1.609437912434093);
+        assert_eq!(ln_beta(7., 5.), -7.745002803515838);
+        assert_eq!(ln_beta(7., 2.3456), -4.589971309681085);
+        assert_eq!(ln_beta(-5., 2.3456), std::f64::INFINITY);
+        assert_eq!(ln_beta(-0.1, 2.3456), std::f64::INFINITY);
+
     }
 }
