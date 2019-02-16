@@ -186,8 +186,6 @@ impl RegressionModel {
             .map(|x| (1. - students_t.cdf(x)) * 2.)
             .collect();
         let tvalue = tvalues[1];
-        // https://github.com/scipy/scipy/blob/8dba340293fe20e62e173bdf2c10ae208286692f/scipy/special/cephes/stdtr.c
-        // https://github.com/scipy/scipy/blob/8dba340293fe20e62e173bdf2c10ae208286692f/scipy/special/cephes/incbet.c
         // Convert these from interal Matrix types to user facing types
         let intercept = parameters[0];
         let slopes: Vec<_> = parameters.iter().cloned().skip(1).collect();
