@@ -17,7 +17,6 @@ impl Default for FormulaRegressionBuilder {
         FormulaRegressionBuilder::new()
     }
 }
-
 impl FormulaRegressionBuilder {
     pub fn new() -> Self {
         FormulaRegressionBuilder {
@@ -80,9 +79,11 @@ impl FormulaRegressionBuilder {
         let output_matrix = DMatrix::from_vec(input_vector.len(), outputs.len() + 1, output_matrix);
         let (model_parameter, singular_values, normalized_cov_params) =
             fit_ols_pinv(&input_vector, &output_matrix)?;
+        let outputs: Vec<_> = outputs.iter().map(|x| x.to_string()).collect();
         RegressionModel::try_from_regression_parameters(
             &input_vector,
             &output_matrix,
+            &outputs,
             &model_parameter,
             &singular_values,
             &normalized_cov_params,
@@ -98,7 +99,7 @@ impl FormulaRegressionBuilder {
 pub struct RegressionModel {
     pub data: Option<HashMap<String, Vec<f64>>>,
     pub formula: Option<String>,
-    pub parameters: Vec<f64>,
+    pub parameters: RegressionParameters,
     pub se: Vec<f64>,
     pub ssr: f64,
     pub rsquared: f64,
@@ -110,6 +111,7 @@ impl RegressionModel {
     fn try_from_regression_parameters(
         inputs: &RowDVector<f64>,
         outputs: &DMatrix<f64>,
+        output_names: &Vec<String>,
         parameters: &DMatrix<f64>,
         singular_values: &DVector<f64>,
         normalized_cov_params: &DMatrix<f64>,
@@ -143,8 +145,17 @@ impl RegressionModel {
             .cloned()
             .map(|x| (1. - students_t.cdf(x)) * 2.)
             .collect();
-        // Convert these from interal Matrix types to user facing Vecs
-        let parameters: Vec<_> = parameters.iter().cloned().collect();
+        // Convert these from interal Matrix types to user facing types
+        let intercept = parameters[0];
+        let slopes: Vec<_> = parameters.iter().cloned().skip(1).collect();
+        if output_names.len() != slopes.len() {
+            bail!("Number of slopes and output names is inconsistent");
+        }
+        let parameters = RegressionParameters {
+            intercept,
+            slopes,
+            slope_names: output_names.to_vec(),
+        };
         let se: Vec<_> = se.iter().cloned().collect();
         let residuals: Vec<_> = residuals.iter().cloned().collect();
         Ok(Self {
@@ -160,6 +171,14 @@ impl RegressionModel {
         })
     }
 }
+/// The intercept and slope(s) of a fitted regression model
+#[derive(Debug)]
+pub struct RegressionParameters {
+    pub intercept: f64,
+    pub slope_names: Vec<String>,
+    pub slopes: Vec<f64>,
+}
+
 /// Performs ordinary least squared linear regression using the pseudo inverse method to solve
 /// the linear system.
 ///
@@ -264,7 +283,9 @@ mod tests {
             -0.6428571428571423,
             0.10714285714285765,
         ];
-        assert_eq!(regression.parameters, model_parameters);
+        assert_eq!(regression.parameters.intercept, model_parameters[0]);
+        assert_eq!(regression.parameters.slopes[0], model_parameters[1]);
+        assert_eq!(regression.parameters.slopes[1], model_parameters[2]);
         assert_eq!(regression.se, se);
         assert_eq!(regression.ssr, ssr);
         assert_eq!(regression.rsquared, rsquared);
