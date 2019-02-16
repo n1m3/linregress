@@ -362,6 +362,25 @@ fn inc_beta(a: f64, b: f64, x: f64) -> f64 {
     if b * x <= 1.0 && x <= 0.95 {
         return pseries(a, b, x);
     }
+    let mut x = x;
+    let mut a = a;
+    let mut b = b;
+    let w = 1. - x;
+    let mut xc = x;
+    let mut was_swapped = false;
+    // Swap a and b if x is greater than mean
+    if x > a / (a + b) {
+        was_swapped = true;
+        let temp = b;
+        b = a;
+        a = temp;
+        x = w;
+        if b * x <= 1.0 && x <= 0.95 {
+            return pseries(a, b, x);
+        }
+    } else {
+        xc = w;
+    }
     unimplemented!();
 }
 /// Calculates the value of the beta function for `a` and `b`.
@@ -464,5 +483,12 @@ mod tests {
         assert_eq!(inc_beta(1.0, 2.0, 0.0), 0.0);
         assert_eq!(inc_beta(1.0, 2.0, 1.0), 1.0);
         assert_almost_equal(inc_beta(1.0, 2.0, 0.2), 0.36);
+        assert_almost_equal(inc_beta(5.0, 2.0, 0.5), 0.109375);
+        // b * x > 1
+        // x > a / (a + b)
+        // a * x <= 1.0 && x <= 0.95
+        assert_almost_equal(inc_beta(1.0, 3.0, 0.6), 0.063999999);
+        // a * x > 1.0 && x <= 0.95
+        dbg!(inc_beta(4.0, 3.0, 0.6));
     }
 }
