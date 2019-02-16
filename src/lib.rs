@@ -128,8 +128,6 @@ impl FormulaRegressionBuilder {
             &model_parameter,
             &singular_values,
             &normalized_cov_params,
-            data,
-            formula,
         )
     }
 }
@@ -138,8 +136,6 @@ impl FormulaRegressionBuilder {
 ///
 #[derive(Debug)]
 pub struct RegressionModel {
-    pub data: Option<HashMap<String, Vec<f64>>>,
-    pub formula: Option<String>,
     pub parameters: RegressionParameters,
     pub se: Vec<f64>,
     pub ssr: f64,
@@ -156,8 +152,6 @@ impl RegressionModel {
         parameters: &DMatrix<f64>,
         singular_values: &DVector<f64>,
         normalized_cov_params: &DMatrix<f64>,
-        data: HashMap<String, Vec<f64>>,
-        formula: String,
     ) -> Result<Self, Error> {
         let diag = DMatrix::from_diagonal(&singular_values);
         let rank = &diag.rank(0.0);
@@ -200,8 +194,6 @@ impl RegressionModel {
         let se: Vec<_> = se.iter().cloned().collect();
         let residuals: Vec<_> = residuals.iter().cloned().collect();
         Ok(Self {
-            data: Some(data),
-            formula: Some(formula),
             parameters,
             se,
             ssr,
