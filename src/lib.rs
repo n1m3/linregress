@@ -69,7 +69,7 @@ use std::iter;
 mod special_functions;
 use special_functions::stdtr;
 
-/// A builder to create and fit linear regression model.
+/// A builder to create and fit a linear regression model.
 ///
 /// Given a dataset and a regression formula this builder
 /// will produce an ordinary least squared linear regression model.
