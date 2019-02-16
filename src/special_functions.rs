@@ -73,7 +73,7 @@ pub fn inc_beta(a: f64, b: f64, x: f64) -> f64 {
     if x == 0.0 {
         return 0.0;
     }
-    if x == 1.0 {
+    if x as i64 == 1 {
         return 1.0;
     }
     if b * x <= 1.0 && x <= 0.95 {
