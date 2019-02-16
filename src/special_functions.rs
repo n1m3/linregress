@@ -46,7 +46,7 @@ pub fn stdtr(k: i64, t: f64) -> f64 {
             p = -p;
         }
         p = 0.5 + 0.5 * p;
-        return p;
+        p
     } else {
         // computation for even k
         let mut f = 1.0;
@@ -62,7 +62,7 @@ pub fn stdtr(k: i64, t: f64) -> f64 {
             p = -p;
         }
         p = 0.5 + 0.5 * p;
-        return p;
+        p
     }
 }
 /// Returns incomplete beta integral of the arguments, evaluated
