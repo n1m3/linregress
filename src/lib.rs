@@ -135,13 +135,17 @@ impl FormulaRegressionBuilder {
 }
 
 /// A fitted regression model
+/// If a field has only one value for the model it is given as `f64`.
 ///
+/// Otherwise it is given as a [`RegressionParameters`] struct.
+///
+///[`RegressionParameters`]: struct.RegressionParameters.html
 #[derive(Debug)]
 pub struct RegressionModel {
     /// The models intercept and slopes (also known as betas).
     pub parameters: RegressionParameters,
     /// The standard errors of the parameter estimates.
-    pub se: Vec<f64>,
+    pub se: RegressionParameters,
     /// Sum of squared residuals.
     pub ssr: f64,
     /// R-squared of the model.
@@ -149,9 +153,9 @@ pub struct RegressionModel {
     /// Adjusted R-squared of the model.
     pub rsquared_adj: f64,
     /// The two-tailed p values for the t-stats of the params.
-    pub pvalues: Vec<f64>,
+    pub pvalues: RegressionParameters,
     /// The residuals of the model.
-    pub residuals: Vec<f64>,
+    pub residuals: RegressionParameters,
     ///  A scale factor for the covariance matrix.
     ///
     ///  Note that the square root of `scale` is often
@@ -204,7 +208,22 @@ impl RegressionModel {
             regressor_names: output_names.to_vec(),
         };
         let se: Vec<_> = se.iter().cloned().collect();
+        let se = RegressionParameters {
+            intercept_value: se[0],
+            regressor_values: se.iter().cloned().skip(1).collect(),
+            regressor_names: output_names.to_vec(),
+        };
         let residuals: Vec<_> = residuals.iter().cloned().collect();
+        let residuals = RegressionParameters {
+            intercept_value: residuals[0],
+            regressor_values: residuals.iter().cloned().skip(1).collect(),
+            regressor_names: output_names.to_vec(),
+        };
+        let pvalues = RegressionParameters {
+            intercept_value: pvalues[0],
+            regressor_values: pvalues.iter().cloned().skip(1).collect(),
+            regressor_names: output_names.to_vec(),
+        };
         Ok(Self {
             parameters,
             se,
@@ -253,7 +272,11 @@ impl RegressionParameters {
     /// # }
     /// ```
     pub fn pairs(self) -> Vec<(String, f64)> {
-        self.regressor_names.iter().zip(self.regressor_values).map(|(x, y)| (x.to_owned(), y)).collect()
+        self.regressor_names
+            .iter()
+            .zip(self.regressor_values)
+            .map(|(x, y)| (x.to_owned(), y))
+            .collect()
     }
 }
 
@@ -378,14 +401,23 @@ mod tests {
             0.10714285714285765,
         ];
         assert_almost_equal(regression.parameters.intercept_value, model_parameters[0]);
-        assert_almost_equal(regression.parameters.regressor_values[0], model_parameters[1]);
-        assert_almost_equal(regression.parameters.regressor_values[1], model_parameters[2]);
-        assert_slices_almost_equal(&regression.se, &se);
+        assert_almost_equal(
+            regression.parameters.regressor_values[0],
+            model_parameters[1],
+        );
+        assert_almost_equal(
+            regression.parameters.regressor_values[1],
+            model_parameters[2],
+        );
+        assert_almost_equal(regression.se.intercept_value, se[0]);
+        assert_slices_almost_equal(&regression.se.regressor_values, &se[1..]);
         assert_almost_equal(regression.ssr, ssr);
         assert_almost_equal(regression.rsquared, rsquared);
         assert_almost_equal(regression.rsquared_adj, rsquared_adj);
-        assert_slices_almost_equal(&regression.pvalues, &pvalues);
-        assert_slices_almost_equal(&regression.residuals, &residuals);
+        assert_almost_equal(regression.pvalues.intercept_value, pvalues[0]);
+        assert_slices_almost_equal(&regression.pvalues.regressor_values, &pvalues[1..]);
+        assert_almost_equal(regression.residuals.intercept_value, residuals[0]);
+        assert_slices_almost_equal(&regression.residuals.regressor_values, &residuals[1..]);
         assert_eq!(regression.scale, scale);
     }
 }
