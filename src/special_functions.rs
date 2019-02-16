@@ -7,6 +7,64 @@ const MACHEP: f64 = 0.11102230246251565E-15;
 const BIG: f64 = 4.503599627370496E15;
 const BIG_INVERSE: f64 = 2.22044604925031308085E-16;
 
+/// Computes the integral from minus infinity to t of the Student
+/// t distribution with integer k > 0 degrees of freedom
+pub fn stdtr(k: i64, t: f64) -> f64 {
+    assert!(k > 0);
+    if t == 0. {
+        return 0.5;
+    }
+    let rk = k as f64;
+    if t < -2. {
+        let z = rk / (rk + t * t);
+        let p = 0.5 * inc_beta(0.5 * rk, 0.5, z);
+        return p;
+    }
+    // compute integral from -t to + t
+    let x = match t {
+        t if t < 0. => -t,
+        _ => t,
+    };
+    let z = 1.0 + (x * x) / rk;
+    if k % 2 != 0 {
+        // computation for odd k
+        let xsqk = x / rk.sqrt();
+        let mut p = xsqk.atan();
+        if k > 1 {
+            let mut f = 1.0;
+            let mut tz = 1.0;
+            let mut j = 3;
+            while j <= k - 2 && tz / f > MACHEP {
+                tz *= (j - 1) as f64 / (z * (j as f64));
+                f += tz;
+                j += 2;
+            }
+            p += f * xsqk / z;
+        }
+        p *= 2.0 / std::f64::consts::PI;
+        if t < 0. {
+            p = -p;
+        }
+        p = 0.5 + 0.5 * p;
+        return p;
+    } else {
+        // computation for even k
+        let mut f = 1.0;
+        let mut tz = 1.0;
+        let mut j = 2;
+        while j <= k - 2 && tz / f > MACHEP {
+            tz *= (j - 1) as f64 / (z * (j as f64));
+            f += tz;
+            j += 2;
+        }
+        let mut p = f * x / (z * rk).sqrt();
+        if t < 0. {
+            p = -p;
+        }
+        p = 0.5 + 0.5 * p;
+        return p;
+    }
+}
 /// Returns incomplete beta integral of the arguments, evaluated
 /// from zero to x.
 pub fn inc_beta(a: f64, b: f64, x: f64) -> f64 {
@@ -270,7 +328,6 @@ mod tests {
         // a * x > 1.0 && x <= 0.95
         assert_almost_equal(inc_beta(4.0, 3.0, 0.6), 0.54432);
 
-        assert_almost_equal(inc_beta(2.0, 3.0, 0.5),0.6875);
-
+        assert_almost_equal(inc_beta(2.0, 3.0, 0.5), 0.6875);
     }
 }
