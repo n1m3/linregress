@@ -135,11 +135,15 @@ impl FormulaRegressionBuilder {
 }
 
 /// A fitted regression model
+///
+/// Is the result of [`FormulaRegressionBuilder.fit()`]
+///
 /// If a field has only one value for the model it is given as `f64`.
 ///
 /// Otherwise it is given as a [`RegressionParameters`] struct.
 ///
 ///[`RegressionParameters`]: struct.RegressionParameters.html
+///[`FormulaRegressionBuilder.fit()`]: struct.FormulaRegressionBuilder.html#method.fit
 #[derive(Debug)]
 pub struct RegressionModel {
     /// The models intercept and slopes (also known as betas).
@@ -236,12 +240,13 @@ impl RegressionModel {
         })
     }
 }
-/// A parameter of a fitted regression model given for the intercept and each regressor.
+/// A parameter of a fitted [`RegressionModel`] given for the intercept and each regressor.
 ///
 /// The values and names of the regressors are given in the same order.
 ///
 /// You can obtain name value pairs using [`pairs`].
 ///
+/// [`RegressionModel`]: struct.RegressionModel.html
 /// [`pairs`]: struct.RegressionParameters.html#method.pairs
 #[derive(Debug)]
 pub struct RegressionParameters {
