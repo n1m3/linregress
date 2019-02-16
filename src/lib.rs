@@ -184,6 +184,9 @@ impl RegressionModel {
             .cloned()
             .map(|x| (1. - students_t.cdf(x)) * 2.)
             .collect();
+        let tvalue = tvalues[1];
+        // https://github.com/scipy/scipy/blob/8dba340293fe20e62e173bdf2c10ae208286692f/scipy/special/cephes/stdtr.c
+        // https://github.com/scipy/scipy/blob/8dba340293fe20e62e173bdf2c10ae208286692f/scipy/special/cephes/incbet.c
         // Convert these from interal Matrix types to user facing types
         let intercept = parameters[0];
         let slopes: Vec<_> = parameters.iter().cloned().skip(1).collect();
@@ -306,8 +309,8 @@ fn get_sum_of_products(matrix: &DMatrix<f64>, vector: &RowDVector<f64>) -> DMatr
     DMatrix::from_vec(matrix.nrows(), 1, v)
 }
 const MAX_GAMMA: f64 = 171.624376956302725;
-const MINLOG: f64 = -7.08396418532264106224E2;
-const MAXLOG: f64 = 7.09782712893383996843E2;
+const MIN_LOG: f64 = -7.08396418532264106224E2;
+const MAX_LOG: f64 = 7.09782712893383996843E2;
 const MACHEP: f64 = 0.11102230246251565E-15;
 const BIG: f64 = 4.503599627370496E15;
 const BIG_INVERSE: f64 = 2.22044604925031308085E-16;
@@ -332,12 +335,12 @@ fn pseries(a: f64, b: f64, x: f64) -> f64 {
     s += t1;
     s += a_inverse;
     u = a * x.ln();
-    if (a + b) < MAX_GAMMA && u.abs() < MAXLOG {
+    if (a + b) < MAX_GAMMA && u.abs() < MAX_LOG {
         t = 1.0 / beta(a, b);
         s = s * t * x.powf(a);
     } else {
         t = -ln_beta(a, b) + u + s.ln();
-        if t < MINLOG {
+        if t < MIN_LOG {
             s = 0.0;
         } else {
             s = t.exp();
@@ -365,7 +368,7 @@ fn inc_beta(a: f64, b: f64, x: f64) -> f64 {
     let mut x = x;
     let mut a = a;
     let mut b = b;
-    let w = 1. - x;
+    let mut w = 1. - x;
     let mut xc = x;
     let mut was_swapped = false;
     // Swap a and b if x is greater than mean
@@ -382,6 +385,143 @@ fn inc_beta(a: f64, b: f64, x: f64) -> f64 {
         xc = w;
     }
     unimplemented!();
+}
+/// Helper function for inc_beta
+fn inc_bcf(a: f64, b: f64, x: f64) -> f64 {
+    let mut k1 = a;
+    let mut k2 = a + b;
+    let mut k3 = a;
+    let mut k4 = a + 1.0;
+    let mut k5 = 1.0;
+    let mut k6 = b - 1.0;
+    let mut k7 = k4;
+    let mut k8 = a + 2.0;
+    let mut pkm2 = 0.0;
+    let mut qkm2 = 1.0;
+    let mut pkm1 = 1.0;
+    let mut qkm1 = 1.0;
+    let mut r = 1.0;
+    let mut t;
+    let mut answer = 1.0;
+    let threshold = 3.0 * MACHEP;
+    for _n in 0..300 {
+        let xk = -(x * k1 * k2) / (k3 * k4);
+        let pk = pkm1 + pkm2 * xk;
+        let qk = qkm1 + qkm2 * xk;
+        pkm2 = pkm1;
+        pkm1 = pk;
+        qkm2 = qkm1;
+        qkm1 = qk;
+        let xk = (x * k5 * k6) / (k7 * k8);
+        let pk = pkm1 + pkm2 * xk;
+        let qk = qkm1 + qkm2 * xk;
+        pkm2 = pkm1;
+        pkm1 = pk;
+        qkm2 = qkm1;
+        qkm1 = qk;
+        if qk != 0. {
+            r = pk / qk;
+        }
+        if r != 0. {
+            t = ((answer - r) / r).abs();
+            answer = r;
+        } else {
+            t = 1.0;
+        }
+        if t < threshold {
+            return answer;
+        }
+        k1 += 1.0;
+        k2 += 1.0;
+        k3 += 2.0;
+        k4 += 2.0;
+        k5 += 1.0;
+        k6 -= 1.0;
+        k7 += 2.0;
+        k8 += 2.0;
+        if qk.abs() + pk.abs() > BIG {
+            pkm2 *= BIG_INVERSE;
+            pkm1 *= BIG_INVERSE;
+            qkm2 *= BIG_INVERSE;
+            qkm1 *= BIG_INVERSE;
+        }
+        if qk.abs() < BIG_INVERSE || pk.abs() < BIG_INVERSE {
+            pkm2 *= BIG;
+            pkm1 *= BIG;
+            qkm2 *= BIG;
+            qkm1 *= BIG;
+        }
+    }
+    answer
+}
+/// Helper function for inc_beta
+fn inc_bd(a: f64, b: f64, x: f64) -> f64 {
+    let mut k1 = a;
+    let mut k2 = b - 1.0;
+    let mut k3 = a;
+    let mut k4 = a + 1.0;
+    let mut k5 = 1.0;
+    let mut k6 = a + b;
+    let mut k7 = a + 1.0;
+    let mut k8 = a + 2.0;
+    let mut pkm2 = 0.0;
+    let mut qkm2 = 1.0;
+    let mut pkm1 = 1.0;
+    let mut qkm1 = 1.0;
+    let z = x / (1.0 - x);
+    let mut t;
+    let mut answer = 1.0;
+    let mut r = 1.0;
+    let threshold = 3.0 * MACHEP;
+    for _n in 0..300 {
+        let xk = -(z * k1 * k2) / (k3 * k4);
+        let pk = pkm1 + pkm2 * xk;
+        let qk = qkm1 + qkm2 * xk;
+        pkm2 = pkm1;
+        pkm1 = pk;
+        qkm2 = qkm1;
+        qkm1 = qk;
+        let xk = (z * k5 * k6) / (k7 * k8);
+        let pk = pkm1 + pkm2 * xk;
+        let qk = qkm1 + qkm2 * xk;
+        pkm2 = pkm1;
+        pkm1 = pk;
+        qkm2 = qkm1;
+        qkm1 = qk;
+        if qk != 0. {
+            r = pk / qk;
+        }
+        if r != 0. {
+            t = ((answer - r) / r).abs();
+            answer = r;
+        } else {
+            t = 1.0;
+        }
+        if t < threshold {
+            return answer;
+        }
+        k1 += 1.0;
+        k2 -= 1.0;
+        k3 += 2.0;
+        k4 += 2.0;
+        k5 += 1.0;
+        k6 += 1.0;
+        k7 += 2.0;
+        k8 += 2.0;
+        if qk.abs() + pk.abs() > BIG {
+            pkm2 *= BIG_INVERSE;
+            pkm1 *= BIG_INVERSE;
+            qkm2 *= BIG_INVERSE;
+            qkm1 *= BIG_INVERSE;
+        }
+        if qk.abs() < BIG_INVERSE || pk.abs() < BIG_INVERSE {
+            pkm2 *= BIG;
+            pkm1 *= BIG;
+            qkm2 *= BIG;
+            qkm1 *= BIG;
+        }
+    }
+    answer
 }
 /// Calculates the value of the beta function for `a` and `b`.
 ///
