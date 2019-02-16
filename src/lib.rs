@@ -221,7 +221,9 @@ impl RegressionModel {
 ///
 /// The values and names of the regressors are given in the same order.
 ///
-/// You can obtain name value pairs using `pairs`.
+/// You can obtain name value pairs using [`pairs`].
+///
+/// [`pairs`]: struct.RegressionParameters.html#method.pairs
 #[derive(Debug)]
 pub struct RegressionParameters {
     pub intercept_value: f64,
