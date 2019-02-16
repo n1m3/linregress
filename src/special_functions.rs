@@ -38,7 +38,13 @@ pub fn inc_beta(a: f64, b: f64, x: f64) -> f64 {
         a = temp;
         x = w;
         if b * x <= 1.0 && x <= 0.95 {
-            return pseries(a, b, x);
+            let mut t = pseries(a, b, x);
+            if t <= MACHEP {
+                t = 1. - MACHEP;
+            } else {
+                t = 1. - t;
+            }
+            return t;
         }
     } else {
         xc = w;
