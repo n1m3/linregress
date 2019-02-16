@@ -239,10 +239,10 @@ pub struct RegressionModel {
     pub scale: f64,
 }
 impl RegressionModel {
-    fn try_from_regression_parameters(
+    fn try_from_regression_parameters<I: IntoIterator<Item = String>>(
         inputs: RowDVector<f64>,
         outputs: DMatrix<f64>,
-        output_names: Vec<String>,
+        output_names: I,
         parameters: DMatrix<f64>,
         singular_values: DVector<f64>,
         normalized_cov_params: DMatrix<f64>,
@@ -278,6 +278,7 @@ impl RegressionModel {
         // Convert these from interal Matrix types to user facing types
         let intercept = parameters[0];
         let slopes: Vec<_> = parameters.iter().cloned().skip(1).collect();
+        let output_names: Vec<_> = output_names.into_iter().collect();
         if output_names.len() != slopes.len() {
             bail!("Number of slopes and output names is inconsistent");
         }
