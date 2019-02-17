@@ -228,19 +228,9 @@ impl FormulaRegressionBuilder {
             }
             output_matrix.extend(output_vec.iter());
         }
-        //
         let output_matrix = DMatrix::from_vec(input_vector.len(), outputs.len() + 1, output_matrix);
-        let (model_parameter, singular_values, normalized_cov_params) =
-            fit_ols_pinv(input_vector.to_owned(), output_matrix.to_owned())?;
         let outputs: Vec<_> = outputs.iter().map(|x| x.to_string()).collect();
-        RegressionModel::try_from_regression_parameters(
-            input_vector,
-            output_matrix,
-            outputs,
-            model_parameter,
-            singular_values,
-            normalized_cov_params,
-        )
+        RegressionModel::try_from_matrices_and_regressor_names(input_vector, output_matrix, outputs)
     }
 }
 
@@ -277,14 +267,13 @@ pub struct RegressionModel {
     pub scale: f64,
 }
 impl RegressionModel {
-    fn try_from_regression_parameters<I: IntoIterator<Item = String>>(
+    fn try_from_matrices_and_regressor_names<I: IntoIterator<Item = String>>(
         inputs: RowDVector<f64>,
         outputs: DMatrix<f64>,
         output_names: I,
-        parameters: DMatrix<f64>,
-        singular_values: DVector<f64>,
-        normalized_cov_params: DMatrix<f64>,
     ) -> Result<Self, Error> {
+        let (parameters, singular_values, normalized_cov_params) =
+            fit_ols_pinv(inputs.to_owned(), outputs.to_owned())?;
         let diag = DMatrix::from_diagonal(&singular_values);
         let rank = &diag.rank(0.0);
         let input_vec: Vec<_> = inputs.iter().cloned().collect();
