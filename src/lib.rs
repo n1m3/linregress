@@ -1,5 +1,5 @@
 /*!
-  Crate `linregress` provides an easy to use implementatom of ordinary
+  Crate `linregress` provides an easy to use implementation of ordinary
   least squared linear regression.
 
   The builder [`FormulaRegressionBuilder`] is used to construct a model from a
@@ -23,11 +23,11 @@
       .data(data)
       .formula(formula)
       .fit()?;
-  let paramters = model.parameters;
+  let parameters = model.parameters;
   let standard_errors = model.se;
   let pvalues = model.pvalues;
   assert_eq!(
-      paramters.pairs(),
+      parameters.pairs(),
       vec![
           ("X1".to_string(), -0.9999999999999745),
           ("X2".to_string(), 0.00000000000000005637851296924623),
@@ -263,7 +263,7 @@ pub struct RegressionModel {
     ///  A scale factor for the covariance matrix.
     ///
     ///  Note that the square root of `scale` is often
-    ///  called the standard error of the regression
+    ///  called the standard error of the regression.
     pub scale: f64,
 }
 impl RegressionModel {
