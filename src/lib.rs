@@ -272,8 +272,10 @@ impl RegressionModel {
         outputs: DMatrix<f64>,
         output_names: I,
     ) -> Result<Self, Error> {
-        let (parameters, singular_values, normalized_cov_params) =
-            fit_ols_pinv(inputs.to_owned(), outputs.to_owned())?;
+        let low_level_result = fit_ols_pinv(inputs.to_owned(), outputs.to_owned())?;
+        let parameters = low_level_result.params;
+        let singular_values = low_level_result.singular_values;
+        let normalized_cov_params = low_level_result.normalized_cov_params;
         let diag = DMatrix::from_diagonal(&singular_values);
         let rank = &diag.rank(0.0);
         let input_vec: Vec<_> = inputs.iter().cloned().collect();
@@ -387,6 +389,14 @@ impl RegressionParameters {
     }
 }
 
+/// Result of fitting a low level matrix based model
+#[derive(Debug, Clone)]
+struct LowLevelRegressionResult {
+    params: DMatrix<f64>,
+    singular_values: DVector<f64>,
+    normalized_cov_params: DMatrix<f64>,
+}
+
 /// Performs ordinary least squared linear regression using the pseudo inverse method to solve
 /// the linear system.
 ///
@@ -394,8 +404,8 @@ impl RegressionParameters {
 fn fit_ols_pinv(
     inputs: RowDVector<f64>,
     outputs: DMatrix<f64>,
-) -> Result<(DMatrix<f64>, DVector<f64>, DMatrix<f64>), Error> {
-    let singular_values = &outputs.to_owned().svd(false, false).singular_values;
+) -> Result<LowLevelRegressionResult, Error> {
+    let singular_values = outputs.to_owned().svd(false, false).singular_values;
     let pinv = outputs
         .pseudo_inverse(0.)
         .map_err(|_| err_msg("Taking the pinv of the output matrix failed"))?;
@@ -404,7 +414,11 @@ fn fit_ols_pinv(
     if params.len() < 2 {
         bail!("Invalid parameter matrix");
     }
-    Ok((params, singular_values.to_owned(), normalized_cov_params))
+    Ok(LowLevelRegressionResult {
+        params,
+        singular_values,
+        normalized_cov_params,
+    })
 }
 /// Transforms a matrix into a flat Vec.
 fn matrix_as_vec(matrix: DMatrix<f64>) -> Vec<f64> {
