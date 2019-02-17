@@ -294,9 +294,9 @@ impl RegressionModel {
         let centered_tss = &centered_input_matrix.dot(&centered_input_matrix);
         let rsquared = 1. - (ssr / centered_tss);
         let rsquared_adj = 1. - ((n - 1) as f64 / df_resid as f64 * (1. - rsquared));
-        let tvalues: Vec<_> = matrix_as_vec(parameters.to_owned())
+        let tvalues: Vec<_> = matrix_as_vec(&parameters)
             .iter()
-            .zip(matrix_as_vec(se.to_owned()))
+            .zip(matrix_as_vec(&se))
             .map(|(x, y)| x / y)
             .collect();
         let pvalues: Vec<_> = tvalues
@@ -420,7 +420,7 @@ fn fit_ols_pinv(
     })
 }
 /// Transforms a matrix into a flat Vec.
-fn matrix_as_vec(matrix: DMatrix<f64>) -> Vec<f64> {
+fn matrix_as_vec(matrix: &DMatrix<f64>) -> Vec<f64> {
     let mut vector = Vec::new();
     for row_index in 0..matrix.nrows() {
         let row = matrix.row(row_index);
