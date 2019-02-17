@@ -397,10 +397,9 @@ struct LowLevelRegressionResult {
     normalized_cov_params: DMatrix<f64>,
 }
 
-/// Performs ordinary least squared linear regression using the pseudo inverse method to solve
-/// the linear system.
+/// Performs ordinary least squared linear regression using the pseudo inverse method.
 ///
-/// Returns a tuple of the form `(model_parameter, singular_values, normalized_cov_params)` as `Result`.
+/// Returns a tuple `LowLevelRegressionResult`
 fn fit_ols_pinv(
     inputs: RowDVector<f64>,
     outputs: DMatrix<f64>,
