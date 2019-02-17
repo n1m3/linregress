@@ -2,23 +2,22 @@
   Crate `linregress` provides an easy to use implementatom of ordinary
   least squared linear regression.
 
-  The builder [`FormulaRegressionBuilder`] is used to construct a model from a simple [`HashMap`]
-  representing a table of data and a R-style formula. Currently only very simple formula are supported,
+  The builder [`FormulaRegressionBuilder`] is used to construct a model from a
+  table of data and a R-style formula. Currently only very simple formulae are supported,
   see [`FormulaRegressionBuilder.formula`] for details.
 
   # Example
 
   ```
-  use std::collections::HashMap;
   use linregress::FormulaRegressionBuilder;
 
   # use failure::Error;
   # fn main() -> Result<(), Error> {
-  let mut data = HashMap::new();
-  data.insert("Y", vec![1.,2. ,3. , 4., 5.]);
-  data.insert("X1", vec![5., 4., 3., 2., 1.]);
-  data.insert("X2", vec![729.53, 439.0367, 42.054, 1., 0.]);
-  data.insert("X3", vec![258.589, 616.297, 215.061, 498.361, 0.]);
+  let Y = vec![1.,2. ,3. , 4., 5.];
+  let X1 = vec![5., 4., 3., 2., 1.];
+  let X2 = vec![729.53, 439.0367, 42.054, 1., 0.];
+  let X3 = vec![258.589, 616.297, 215.061, 498.361, 0.];
+  let data = vec![("Y", Y), ("X1", X1), ("X2", X2), ("X3", X3)];
   let formula = "Y ~ X1 + X2 + X3";
   let model = FormulaRegressionBuilder::new()
       .data(data)
@@ -56,7 +55,6 @@
   ```
 
   [`FormulaRegressionBuilder`]: struct.FormulaRegressionBuilder.html
-  [`HashMap`]: https://doc.rust-lang.org/std/collections/struct.HashMap.html
   [`FormulaRegressionBuilder.formula`]: struct.FormulaRegressionBuilder.html#method.formula
 */
 
@@ -79,14 +77,13 @@ use special_functions::stdtr;
 /// # Usage
 ///
 /// ```
-/// use std::collections::HashMap;
 /// use linregress::FormulaRegressionBuilder;
 ///
 /// # use failure::Error;
 /// # fn main() -> Result<(), Error> {
-/// let mut data = HashMap::new();
-/// data.insert("Y", vec![1.,2. ,3. , 4.]);
-/// data.insert("X", vec![4., 3., 2., 1.]);
+/// let Y = vec![1.,2. ,3. , 4.];
+/// let X = vec![4., 3., 2., 1.];
+/// let data = vec![("Y", Y), ("X", X)];
 /// let model = FormulaRegressionBuilder::new().data(data).formula("Y ~ X").fit()?;
 /// assert_eq!(model.parameters.intercept_value, 5.0);
 /// assert_eq!(model.parameters.regressor_values[0], -0.9999999999999993);
@@ -377,15 +374,14 @@ impl RegressionParameters {
     /// # Usage
     ///
     /// ```
-    /// use std::collections::HashMap;
     /// use linregress::FormulaRegressionBuilder;
     ///
     /// # use failure::Error;
     /// # fn main() -> Result<(), Error> {
-    /// let mut data = HashMap::new();
-    /// data.insert("Y", vec![1.,2. ,3. , 4.]);
-    /// data.insert("X1", vec![4., 3., 2., 1.]);
-    /// data.insert("X2", vec![1., 2., 3., 4.]);
+    /// let Y = vec![1.,2. ,3. , 4.];
+    /// let X1 = vec![4., 3., 2., 1.];
+    /// let X2 = vec![1., 2., 3., 4.];
+    /// let data = vec![("Y", Y), ("X1", X1), ("X2", X2)];
     /// let model = FormulaRegressionBuilder::new().data(data).formula("Y ~ X1 + X2").fit()?;
     /// let pairs = model.parameters.pairs();
     /// assert_eq!(pairs[0], ("X1".to_string(), -0.0370370370370372));
