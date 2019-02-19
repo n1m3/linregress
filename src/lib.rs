@@ -234,9 +234,9 @@ impl FormulaRegressionBuilder {
     }
 }
 
-/// A fitted regression model
+/// A fitted regression model.
 ///
-/// Is the result of [`FormulaRegressionBuilder.fit()`]
+/// Is the result of [`FormulaRegressionBuilder.fit()`].
 ///
 /// If a field has only one value for the model it is given as `f64`.
 ///
