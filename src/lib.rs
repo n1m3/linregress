@@ -118,8 +118,8 @@ impl FormulaRegressionBuilder {
     /// `S` is a type that implements `Into<String>`, such as [`String`] or [`str`].
     ///
     /// You can think of this format as the representation of a table of data where
-    /// each tuple `(S, Vec<f64>)` represents a row. The `S` is the header or label of the row
-    /// and the `Vec<f64>` contains the data of the row.
+    /// each tuple `(S, Vec<f64>)` represents a column. The `S` is the header or label of the
+    /// column and the `Vec<f64>` contains the data of the column.
     ///
     /// # Example
     ///
