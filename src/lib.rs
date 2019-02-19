@@ -132,7 +132,7 @@ impl FormulaRegressionBuilder {
     /// let regression_builder = FormulaRegressionBuilder::new().formula("Y ~ X");
     ///
     /// let mut data1 = HashMap::new();
-    /// data1.insert("Y", vec![1.,2. ,3. , 4.]);
+    /// data1.insert("Y", vec![1., 2., 3., 4.]);
     /// data1.insert("X", vec![4., 3., 2., 1.]);
     /// let model1 = regression_builder.to_owned().data(data1).fit()?;
     ///
