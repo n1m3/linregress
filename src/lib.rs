@@ -539,4 +539,28 @@ mod tests {
         assert_slices_almost_equal(&regression.residuals.regressor_values, &residuals[1..]);
         assert_eq!(regression.scale, scale);
     }
+    #[test]
+    fn test_invalid_input_empty_matrix() {
+        let y = vec![];
+        let x1 = vec![];
+        let x2 = vec![];
+        let data = vec![("Y", y), ("X1", x1), ("X2", x2)];
+        let model = FormulaRegressionBuilder::new()
+            .data(data)
+            .formula("Y ~ X1 + X2")
+            .fit();
+        assert_eq!(model.is_ok(), false);
+    }
+    #[test]
+    fn test_invalid_input_wrong_shape() {
+        let y = vec![1., 2., 3.];
+        let x1 = vec![1., 2., 3.];
+        let x2 = vec![1., 2.];
+        let data = vec![("Y", y), ("X1", x1), ("X2", x2)];
+        let model = FormulaRegressionBuilder::new()
+            .data(data)
+            .formula("Y ~ X1 + X2")
+            .fit();
+        assert_eq!(model.is_ok(), false);
+    }
 }
