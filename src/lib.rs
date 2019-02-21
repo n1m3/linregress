@@ -410,7 +410,13 @@ fn fit_ols_pinv(
     if outputs.nrows() < 1 || outputs.ncols() < 1 {
         bail!("Fitting the model failed because the output matrix is empty");
     }
-    let singular_values = outputs.to_owned().svd(false, false).singular_values;
+    let singular_values = outputs
+        .to_owned()
+        .try_svd(false, false, std::f64::EPSILON, 0)
+        .ok_or_else(|| {
+            err_msg("computing the singular-value decomposition of the output matrix failed")
+        })?
+        .singular_values;
     let pinv = outputs
         .pseudo_inverse(0.)
         .map_err(|_| err_msg("Taking the pinv of the output matrix failed"))?;
