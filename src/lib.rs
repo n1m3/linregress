@@ -404,6 +404,12 @@ fn fit_ols_pinv(
     inputs: RowDVector<f64>,
     outputs: DMatrix<f64>,
 ) -> Result<LowLevelRegressionResult, Error> {
+    if inputs.len() < 1 {
+        bail!("Fitting the model failed because the input vector is empty");
+    }
+    if outputs.nrows() < 1 || outputs.ncols() < 1 {
+        bail!("Fitting the model failed because the output matrix is empty");
+    }
     let singular_values = outputs.to_owned().svd(false, false).singular_values;
     let pinv = outputs
         .pseudo_inverse(0.)
