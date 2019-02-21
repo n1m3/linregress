@@ -13,11 +13,11 @@
 
   # use failure::Error;
   # fn main() -> Result<(), Error> {
-  let Y = vec![1.,2. ,3. , 4., 5.];
-  let X1 = vec![5., 4., 3., 2., 1.];
-  let X2 = vec![729.53, 439.0367, 42.054, 1., 0.];
-  let X3 = vec![258.589, 616.297, 215.061, 498.361, 0.];
-  let data = vec![("Y", Y), ("X1", X1), ("X2", X2), ("X3", X3)];
+  let y = vec![1.,2. ,3. , 4., 5.];
+  let x1 = vec![5., 4., 3., 2., 1.];
+  let x2 = vec![729.53, 439.0367, 42.054, 1., 0.];
+  let x3 = vec![258.589, 616.297, 215.061, 498.361, 0.];
+  let data = vec![("Y", y), ("X1", x1), ("X2", x2), ("X3", x3)];
   let formula = "Y ~ X1 + X2 + X3";
   let model = FormulaRegressionBuilder::new()
       .data(data)
@@ -81,9 +81,9 @@ use special_functions::stdtr;
 ///
 /// # use failure::Error;
 /// # fn main() -> Result<(), Error> {
-/// let Y = vec![1.,2. ,3. , 4.];
-/// let X = vec![4., 3., 2., 1.];
-/// let data = vec![("Y", Y), ("X", X)];
+/// let y = vec![1.,2. ,3. , 4.];
+/// let x = vec![4., 3., 2., 1.];
+/// let data = vec![("Y", y), ("X", x)];
 /// let model = FormulaRegressionBuilder::new().data(data).formula("Y ~ X").fit()?;
 /// assert_eq!(model.parameters.intercept_value, 5.0);
 /// assert_eq!(model.parameters.regressor_values[0], -0.9999999999999993);
@@ -136,9 +136,9 @@ impl FormulaRegressionBuilder {
     /// data1.insert("X", vec![4., 3., 2., 1.]);
     /// let model1 = regression_builder.to_owned().data(data1).fit()?;
     ///
-    /// let Y = vec![1., 2., 3., 4.];
-    /// let X = vec![4., 3., 2., 1.];
-    /// let data2 = vec![("X", X), ("Y", Y)];
+    /// let y = vec![1., 2., 3., 4.];
+    /// let x = vec![4., 3., 2., 1.];
+    /// let data2 = vec![("X", x), ("Y", y)];
     /// let model2 = regression_builder.data(data2).fit()?;
     ///
     /// assert_eq!(model1.parameters.regressor_values, model2.parameters.regressor_values);
@@ -369,10 +369,10 @@ impl RegressionParameters {
     ///
     /// # use failure::Error;
     /// # fn main() -> Result<(), Error> {
-    /// let Y = vec![1.,2. ,3. , 4.];
-    /// let X1 = vec![4., 3., 2., 1.];
-    /// let X2 = vec![1., 2., 3., 4.];
-    /// let data = vec![("Y", Y), ("X1", X1), ("X2", X2)];
+    /// let y = vec![1.,2. ,3. , 4.];
+    /// let x1 = vec![4., 3., 2., 1.];
+    /// let x2 = vec![1., 2., 3., 4.];
+    /// let data = vec![("Y", y), ("X1", x1), ("X2", x2)];
     /// let model = FormulaRegressionBuilder::new().data(data).formula("Y ~ X1 + X2").fit()?;
     /// let pairs = model.parameters.pairs();
     /// assert_eq!(pairs[0], ("X1".to_string(), -0.0370370370370372));
