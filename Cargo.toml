@@ -8,3 +8,6 @@ edition = "2018"
 failure = "~0.1.5"
 nalgebra = "~0.17.0"
 statrs = "~0.10.0"
+
+[features]
+unstable = []

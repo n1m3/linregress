@@ -59,6 +59,7 @@
 */
 
 #![warn(rust_2018_idioms)]
+#![cfg_attr(feature = "unstable", feature(test))]
 use failure::{bail, err_msg, Error};
 use nalgebra::{DMatrix, DVector, RowDVector};
 use std::collections::HashMap;
@@ -574,5 +575,26 @@ mod tests {
             .formula("Y ~ X1 + X2")
             .fit();
         assert_eq!(model.is_ok(), false);
+    }
+}
+#[cfg(all(feature = "unstable", test))]
+mod bench {
+    use super::*;
+    extern crate test;
+    use test::Bencher;
+    #[bench]
+    fn bench(b: &mut Bencher) {
+        let y = vec![1., 2., 3., 4., 5.];
+        let x1 = vec![5., 4., 3., 2., 1.];
+        let x2 = vec![729.53, 439.0367, 42.054, 1., 0.];
+        let x3 = vec![258.589, 616.297, 215.061, 498.361, 0.];
+        let data = vec![("Y", y), ("X1", x1), ("X2", x2), ("X3", x3)];
+        let formula = "Y ~ X1 + X2 + X3";
+        b.iter(|| {
+            FormulaRegressionBuilder::new()
+                .data(data.to_owned())
+                .formula(formula)
+                .fit()
+        });
     }
 }
