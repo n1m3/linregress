@@ -576,6 +576,44 @@ mod tests {
             .fit();
         assert_eq!(model.is_ok(), false);
     }
+    #[test]
+    fn test_invalid_input_nan() {
+        let y1 = vec![1., 2., 3., 4.];
+        let x1 = vec![1., 2., 3., std::f64::NAN];
+        let data1 = vec![("Y", y1), ("X", x1)];
+        let y2 = vec![1., 2., 3., std::f64::NAN];
+        let x2 = vec![1., 2., 3., 4.];
+        let data2 = vec![("Y", y2), ("X", x2)];
+        let model1 = FormulaRegressionBuilder::new()
+            .data(data1)
+            .formula("Y ~ X")
+            .fit();
+        let model2 = FormulaRegressionBuilder::new()
+            .data(data2)
+            .formula("Y ~ X")
+            .fit();
+        assert!(model1.is_err());
+        assert!(model2.is_err());
+    }
+    #[test]
+    fn test_invalid_input_infinity() {
+        let y1 = vec![1., 2., 3., 4.];
+        let x1 = vec![1., 2., 3., std::f64::INFINITY];
+        let data1 = vec![("Y", y1), ("X", x1)];
+        let y2 = vec![1., 2., 3., std::f64::NEG_INFINITY];
+        let x2 = vec![1., 2., 3., 4.];
+        let data2 = vec![("Y", y2), ("X", x2)];
+        let model1 = FormulaRegressionBuilder::new()
+            .data(data1)
+            .formula("Y ~ X")
+            .fit();
+        let model2 = FormulaRegressionBuilder::new()
+            .data(data2)
+            .formula("Y ~ X")
+            .fit();
+        assert!(model1.is_err());
+        assert!(model2.is_err());
+    }
 }
 #[cfg(all(feature = "unstable", test))]
 mod bench {
