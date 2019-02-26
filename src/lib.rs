@@ -208,6 +208,7 @@ impl FormulaRegressionBuilder {
         if outputs.is_empty() {
             bail!("Invalid formula. Expected formula of the form 'y ~ x1 + x2'");
         }
+        Self::check_if_data_valid(&data)?;
         let input_vector = data
             .get(input)
             .ok_or_else(|| err_msg(format!("{} not found in data", input)))?;
@@ -232,6 +233,14 @@ impl FormulaRegressionBuilder {
         let output_matrix = DMatrix::from_vec(input_vector.len(), outputs.len() + 1, output_matrix);
         let outputs: Vec<_> = outputs.iter().map(|x| x.to_string()).collect();
         RegressionModel::try_from_matrices_and_regressor_names(input_vector, output_matrix, outputs)
+    }
+    fn check_if_data_valid(data: &HashMap<String, Vec<f64>>) -> Result<(), Error> {
+        for (_header, column) in data {
+            if column.into_iter().any(|x| !x.is_finite()) {
+                bail!("The data contains a non real value (NaN or infinity or negative infinity)");
+            }
+        }
+        Ok(())
     }
 }
 
