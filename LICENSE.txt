@@ -22,7 +22,7 @@ SOFTWARE.
 
 
 The special functions module contains functions that are based on the
-C implementation in the cephes library (http://www.netlib.org/cephes/).
+C implementation in the Cephes library (http://www.netlib.org/cephes/).
 They are considered a derivative of the cephes library that is compatibly licensed:
 
 Name: Cephes
