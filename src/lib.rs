@@ -62,6 +62,7 @@
 #![cfg_attr(feature = "unstable", feature(test))]
 use failure::{bail, err_msg, Error};
 use nalgebra::{DMatrix, DVector, RowDVector};
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::iter;
 
@@ -241,6 +242,32 @@ impl FormulaRegressionBuilder {
             }
         }
         Ok(())
+    }
+}
+
+#[derive(Debug, Clone)]
+/// A container struct for the regression data. We use this so that `FormulaRegressionBuilder`
+/// can implement the `Copy` trait by only keeping a reference to this struct.
+pub struct RegressionData<'a> {
+    data: HashMap<Cow<'a, str>, Vec<f64>>,
+}
+
+impl<'a> RegressionData<'a> {
+    /// Constructs a new `RegressionData` struct from any collection that
+    /// implements the `IntoIterator` trait.
+    ///
+    /// The iterator must consist of tupels of the form `(S, Vec<f64>)` where
+    /// `S` is a type that can be converted to a `Cow<'a, str>`.
+    fn new<I, S>(data: I) -> RegressionData<'a>
+    where
+        I: IntoIterator<Item = (S, Vec<f64>)>,
+        S: Into<Cow<'a, str>>,
+    {
+        let mut temp = HashMap::new();
+        for (key, value) in data {
+            temp.insert(key.into(), value);
+        }
+        Self { data: temp }
     }
 }
 
