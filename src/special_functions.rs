@@ -315,7 +315,7 @@ mod tests {
     use quickcheck_macros::quickcheck;
     use special_fun::unsafe_cephes_double;
     fn assert_almost_equal(a: f64, b: f64) {
-        if (a - b).abs() > 1.0E-6 {
+        if (a - b).abs() > 1.0E-14 {
             panic!("{:?} vs {:?}", a, b);
         }
     }
