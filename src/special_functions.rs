@@ -311,6 +311,9 @@ fn inc_bd(a: f64, b: f64, x: f64) -> f64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use quickcheck::TestResult;
+    use quickcheck_macros::quickcheck;
+    use special_fun::unsafe_cephes_double;
     fn assert_almost_equal(a: f64, b: f64) {
         if (a - b).abs() > 1.0E-6 {
             panic!("{:?} vs {:?}", a, b);
@@ -330,5 +333,32 @@ mod tests {
         assert_almost_equal(inc_beta(4.0, 3.0, 0.6), 0.54432);
 
         assert_almost_equal(inc_beta(2.0, 3.0, 0.5), 0.6875);
+    }
+    #[quickcheck]
+    fn qc_inc_beta(a: f64, b: f64, x: f64) -> TestResult {
+        fn cephes_inc_beta(a: f64, b: f64, x: f64) -> f64 {
+            assert!(a > 0. && b > 0.);
+            assert!(x >= 0. || x <= 1.0);
+            unsafe { unsafe_cephes_double::incbet(a, b, x) }
+        }
+        if !(a > 0. && b > 0.) {
+            return TestResult::discard();
+        } else if x < 0. || x > 1. {
+            return TestResult::discard();
+        }
+        let passed = (inc_beta(a, b, x) - cephes_inc_beta(a, b, x)).abs() < 1.0E-12;
+        TestResult::from_bool(passed)
+    }
+    #[quickcheck]
+    fn qc_stdtr(k: i16, t: f64) -> TestResult {
+        fn cephes_stdtr(k: i16, t: f64) -> f64 {
+            assert!(k > 0);
+            unsafe { unsafe_cephes_double::stdtr(k, t) }
+        }
+        if k <= 0 {
+            return TestResult::discard();
+        }
+        let passed = (stdtr(k.into(), t) - cephes_stdtr(k, t)).abs() < 1.0E-14;
+        TestResult::from_bool(passed)
     }
 }
