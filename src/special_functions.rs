@@ -4,9 +4,9 @@ use statrs::function::beta::{beta, ln_beta};
 use std::mem::swap;
 
 const MAX_GAMMA: f64 = 171.624_376_956_302_7;
-const MIN_LOG: f64 = -7.083_964_185_322_641E2;
-const MAX_LOG: f64 = 7.097_827_128_933E2;
-const MACHEP: f64 = 1.110_223_024_625_156_5E-16;
+const MIN_LOG: f64 = -708.396_418_532_264_1; // log(2**-1022)
+const MAX_LOG: f64 = 709.782_712_893_384; // log(2**1024)
+const MACHINE_EPSILON: f64 = 1.110_223_024_625_156_5E-16; // maximum relative precision of f64 (2^-53)
 const BIG: f64 = 4.503_599_627_370_496E15;
 const BIG_INVERSE: f64 = 2.220_446_049_250_313E-16;
 
@@ -37,7 +37,7 @@ pub fn stdtr(k: i64, t: f64) -> f64 {
             let mut f = 1.0;
             let mut tz = 1.0;
             let mut j = 3;
-            while j <= k - 2 && tz / f > MACHEP {
+            while j <= k - 2 && tz / f > MACHINE_EPSILON {
                 tz *= (j - 1) as f64 / (z * (j as f64));
                 f += tz;
                 j += 2;
@@ -55,7 +55,7 @@ pub fn stdtr(k: i64, t: f64) -> f64 {
         let mut f = 1.0;
         let mut tz = 1.0;
         let mut j = 2;
-        while j <= k - 2 && tz / f > MACHEP {
+        while j <= k - 2 && tz / f > MACHINE_EPSILON {
             tz *= (j - 1) as f64 / (z * (j as f64));
             f += tz;
             j += 2;
@@ -95,8 +95,8 @@ pub fn inc_beta(a: f64, b: f64, x: f64) -> f64 {
         x = w;
         if b * x <= 1.0 && x <= 0.95 {
             let mut t = pseries(a, b, x);
-            if t <= MACHEP {
-                t = 1. - MACHEP;
+            if t <= MACHINE_EPSILON {
+                t = 1. - MACHINE_EPSILON;
             } else {
                 t = 1. - t;
             }
@@ -129,8 +129,8 @@ pub fn inc_beta(a: f64, b: f64, x: f64) -> f64 {
         }
     }
     if was_swapped {
-        if t <= MACHEP {
-            t = 1. - MACHEP;
+        if t <= MACHINE_EPSILON {
+            t = 1. - MACHINE_EPSILON;
         } else {
             t = 1. - t;
         }
@@ -147,7 +147,7 @@ fn pseries(a: f64, b: f64, x: f64) -> f64 {
     let mut t = u;
     let mut n = 2.0;
     let mut s = 0.0;
-    let z = MACHEP * a_inverse;
+    let z = MACHINE_EPSILON * a_inverse;
     while v.abs() > z {
         u = (n - b) * x / n;
         t *= u;
@@ -188,7 +188,7 @@ fn inc_bcf(a: f64, b: f64, x: f64) -> f64 {
     let mut r = 1.0;
     let mut t;
     let mut answer = 1.0;
-    let threshold = 3.0 * MACHEP;
+    let threshold = 3.0 * MACHINE_EPSILON;
     for _n in 0..300 {
         let xk = -(x * k1 * k2) / (k3 * k4);
         let pk = pkm1 + pkm2 * xk;
@@ -257,7 +257,7 @@ fn inc_bd(a: f64, b: f64, x: f64) -> f64 {
     let mut t;
     let mut answer = 1.0;
     let mut r = 1.0;
-    let threshold = 3.0 * MACHEP;
+    let threshold = 3.0 * MACHINE_EPSILON;
     for _n in 0..300 {
         let xk = -(z * k1 * k2) / (k3 * k4);
         let pk = pkm1 + pkm2 * xk;
