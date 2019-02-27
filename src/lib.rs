@@ -94,16 +94,16 @@ use special_functions::stdtr;
 /// # }
 /// ```
 #[derive(Debug, Clone)]
-pub struct FormulaRegressionBuilder {
-    data: Option<HashMap<String, Vec<f64>>>,
-    formula: Option<String>,
+pub struct FormulaRegressionBuilder<'a> {
+    data: Option<&'a RegressionData<'a>>,
+    formula: Option<Cow<'a, str>>,
 }
-impl Default for FormulaRegressionBuilder {
+impl<'a> Default for FormulaRegressionBuilder<'a> {
     fn default() -> Self {
         FormulaRegressionBuilder::new()
     }
 }
-impl FormulaRegressionBuilder {
+impl<'a> FormulaRegressionBuilder<'a> {
     /// Create as new FormulaRegressionBuilder with no data or formula set.
     pub fn new() -> Self {
         FormulaRegressionBuilder {
@@ -154,16 +154,8 @@ impl FormulaRegressionBuilder {
     /// [`Vec`]: https://doc.rust-lang.org/std/vec/struct.Vec.html
     /// [`String`]: https://doc.rust-lang.org/std/string/struct.String.html
     /// [`str`]: https://doc.rust-lang.org/std/primitive.str.html
-    pub fn data<I, S>(mut self, data: I) -> Self
-    where
-        I: IntoIterator<Item = (S, Vec<f64>)>,
-        S: Into<String>,
-    {
-        let mut temp = HashMap::new();
-        for (key, value) in data {
-            temp.insert(key.into(), value);
-        }
-        self.data = Some(temp);
+    pub fn data(mut self, data: &'a RegressionData<'a>) -> Self {
+        self.data = Some(data);
         self
     }
     /// Set the formula to use for the regression.
@@ -176,7 +168,7 @@ impl FormulaRegressionBuilder {
     /// Note that there is currently no special support for categorical variables.
     /// So if you have a categorical variable with more than two distinct values
     /// you will need to perform "dummy coding" yourself.
-    pub fn formula<T: Into<String>>(mut self, formula: T) -> Self {
+    pub fn formula<T: Into<Cow<'a, str>>>(mut self, formula: T) -> Self {
         self.formula = Some(formula.into());
         self
     }
@@ -194,7 +186,7 @@ impl FormulaRegressionBuilder {
         let formula: Result<_, Error> = self
             .formula
             .ok_or_else(|| err_msg("Cannot fit model without formula"));
-        let data = data?;
+        let data = &data?.data;
         let formula = formula?;
         let split_formula: Vec<_> = formula.split('~').collect();
         if split_formula.len() != 2 {
@@ -209,7 +201,6 @@ impl FormulaRegressionBuilder {
         if outputs.is_empty() {
             bail!("Invalid formula. Expected formula of the form 'y ~ x1 + x2'");
         }
-        Self::check_if_data_valid(&data)?;
         let input_vector = data
             .get(input)
             .ok_or_else(|| err_msg(format!("{} not found in data", input)))?;
@@ -234,14 +225,6 @@ impl FormulaRegressionBuilder {
         let output_matrix = DMatrix::from_vec(input_vector.len(), outputs.len() + 1, output_matrix);
         let outputs: Vec<_> = outputs.iter().map(|x| x.to_string()).collect();
         RegressionModel::try_from_matrices_and_regressor_names(input_vector, output_matrix, outputs)
-    }
-    fn check_if_data_valid(data: &HashMap<String, Vec<f64>>) -> Result<(), Error> {
-        for column in data.values() {
-            if column.iter().any(|x| !x.is_finite()) {
-                bail!("The data contains a non real value (NaN or infinity or negative infinity)");
-            }
-        }
-        Ok(())
     }
 }
 
