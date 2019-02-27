@@ -9,7 +9,7 @@
   # Example
 
   ```
-  use linregress::FormulaRegressionBuilder;
+  use linregress::{FormulaRegressionBuilder, RegressionDataBuilder};
 
   # use failure::Error;
   # fn main() -> Result<(), Error> {
@@ -18,9 +18,10 @@
   let x2 = vec![729.53, 439.0367, 42.054, 1., 0.];
   let x3 = vec![258.589, 616.297, 215.061, 498.361, 0.];
   let data = vec![("Y", y), ("X1", x1), ("X2", x2), ("X3", x3)];
+  let data = RegressionDataBuilder::new().build_from(data)?;
   let formula = "Y ~ X1 + X2 + X3";
   let model = FormulaRegressionBuilder::new()
-      .data(data)
+      .data(&data)
       .formula(formula)
       .fit()?;
   let parameters = model.parameters;
@@ -79,14 +80,15 @@ use special_functions::stdtr;
 /// # Usage
 ///
 /// ```
-/// use linregress::FormulaRegressionBuilder;
+/// use linregress::{FormulaRegressionBuilder, RegressionDataBuilder};
 ///
 /// # use failure::Error;
 /// # fn main() -> Result<(), Error> {
 /// let y = vec![1.,2. ,3. , 4.];
 /// let x = vec![4., 3., 2., 1.];
 /// let data = vec![("Y", y), ("X", x)];
-/// let model = FormulaRegressionBuilder::new().data(data).formula("Y ~ X").fit()?;
+/// let data = RegressionDataBuilder::new().build_from(data)?;
+/// let model = FormulaRegressionBuilder::new().data(&data).formula("Y ~ X").fit()?;
 /// assert_eq!(model.parameters.intercept_value, 5.0);
 /// assert_eq!(model.parameters.regressor_values[0], -0.9999999999999993);
 /// assert_eq!(model.parameters.regressor_names[0], "X");
@@ -113,47 +115,8 @@ impl<'a> FormulaRegressionBuilder<'a> {
     }
     /// Set the data to be used for the regression.
     ///
-    /// Any type that implements the [`IntoIterator`] trait can be used for the data.
-    /// This could for example be a [`Hashmap`] or a [`Vec`].
-    ///
-    /// The iterator must consist of tupels of the form `(S, Vec<f64>)` where
-    /// `S` is a type that implements `Into<String>`, such as [`String`] or [`str`].
-    ///
-    /// You can think of this format as the representation of a table of data where
-    /// each tuple `(S, Vec<f64>)` represents a column. The `S` is the header or label of the
-    /// column and the `Vec<f64>` contains the data of the column.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use std::collections::HashMap;
-    /// use linregress::FormulaRegressionBuilder;
-    ///
-    /// # use failure::Error;
-    /// # fn main() -> Result<(), Error> {
-    /// let regression_builder = FormulaRegressionBuilder::new().formula("Y ~ X");
-    ///
-    /// let mut data1 = HashMap::new();
-    /// data1.insert("Y", vec![1., 2., 3., 4.]);
-    /// data1.insert("X", vec![4., 3., 2., 1.]);
-    /// let model1 = regression_builder.to_owned().data(data1).fit()?;
-    ///
-    /// let y = vec![1., 2., 3., 4.];
-    /// let x = vec![4., 3., 2., 1.];
-    /// let data2 = vec![("X", x), ("Y", y)];
-    /// let model2 = regression_builder.data(data2).fit()?;
-    ///
-    /// assert_eq!(model1.parameters.regressor_values, model2.parameters.regressor_values);
-    /// assert_eq!(model1.parameters.regressor_names, model2.parameters.regressor_names);
-    /// # Ok(())
-    /// # }
-    /// ```
-    ///
-    /// [`IntoIterator`]: https://doc.rust-lang.org/std/iter/trait.IntoIterator.html
-    /// [`Hashmap`]: https://doc.rust-lang.org/std/collections/struct.HashMap.html
-    /// [`Vec`]: https://doc.rust-lang.org/std/vec/struct.Vec.html
-    /// [`String`]: https://doc.rust-lang.org/std/string/struct.String.html
-    /// [`str`]: https://doc.rust-lang.org/std/primitive.str.html
+    /// The data has to be given as a reference to a `RegressionData` struct.
+    /// See `RegressionDataBuilder` for details.
     pub fn data(mut self, data: &'a RegressionData<'a>) -> Self {
         self.data = Some(data);
         self
@@ -543,7 +506,7 @@ impl RegressionParameters {
     /// # Usage
     ///
     /// ```
-    /// use linregress::FormulaRegressionBuilder;
+    /// use linregress::{FormulaRegressionBuilder, RegressionDataBuilder};
     ///
     /// # use failure::Error;
     /// # fn main() -> Result<(), Error> {
@@ -551,7 +514,8 @@ impl RegressionParameters {
     /// let x1 = vec![4., 3., 2., 1.];
     /// let x2 = vec![1., 2., 3., 4.];
     /// let data = vec![("Y", y), ("X1", x1), ("X2", x2)];
-    /// let model = FormulaRegressionBuilder::new().data(data).formula("Y ~ X1 + X2").fit()?;
+    /// let data = RegressionDataBuilder::new().build_from(data)?;
+    /// let model = FormulaRegressionBuilder::new().data(&data).formula("Y ~ X1 + X2").fit()?;
     /// let pairs = model.parameters.pairs();
     /// assert_eq!(pairs[0], ("X1".to_string(), -0.0370370370370372));
     /// assert_eq!(pairs[1], ("X2".to_string(), 0.9629629629629629));
