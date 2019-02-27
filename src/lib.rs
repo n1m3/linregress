@@ -679,8 +679,9 @@ mod tests {
         data.insert("Y", inputs);
         data.insert("X1", outputs1);
         data.insert("X2", outputs2);
+        let data = RegressionDataBuilder::new().build_from(data).unwrap();
         let regression = FormulaRegressionBuilder::new()
-            .data(data)
+            .data(&data)
             .formula("Y ~ X1 + X2")
             .fit()
             .expect("Fitting model failed");
@@ -735,11 +736,8 @@ mod tests {
         let x1 = vec![];
         let x2 = vec![];
         let data = vec![("Y", y), ("X1", x1), ("X2", x2)];
-        let model = FormulaRegressionBuilder::new()
-            .data(data)
-            .formula("Y ~ X1 + X2")
-            .fit();
-        assert_eq!(model.is_ok(), false);
+        let data = RegressionDataBuilder::new().build_from(data);
+        assert!(data.is_err());
     }
     #[test]
     fn test_invalid_input_wrong_shape() {
@@ -747,11 +745,8 @@ mod tests {
         let x1 = vec![1., 2., 3.];
         let x2 = vec![1., 2.];
         let data = vec![("Y", y), ("X1", x1), ("X2", x2)];
-        let model = FormulaRegressionBuilder::new()
-            .data(data)
-            .formula("Y ~ X1 + X2")
-            .fit();
-        assert_eq!(model.is_ok(), false);
+        let data = RegressionDataBuilder::new().build_from(data);
+        assert!(data.is_err());
     }
     #[test]
     fn test_invalid_input_nan() {
@@ -761,16 +756,16 @@ mod tests {
         let y2 = vec![1., 2., 3., std::f64::NAN];
         let x2 = vec![1., 2., 3., 4.];
         let data2 = vec![("Y", y2), ("X", x2)];
-        let model1 = FormulaRegressionBuilder::new()
-            .data(data1)
-            .formula("Y ~ X")
-            .fit();
-        let model2 = FormulaRegressionBuilder::new()
-            .data(data2)
-            .formula("Y ~ X")
-            .fit();
-        assert!(model1.is_err());
-        assert!(model2.is_err());
+        let r_data1 = RegressionDataBuilder::new().build_from(data1.to_owned());
+        let r_data2 = RegressionDataBuilder::new().build_from(data2.to_owned());
+        assert!(r_data1.is_err());
+        assert!(r_data2.is_err());
+        let builder = RegressionDataBuilder::new();
+        let builder = builder.invalid_value_handling(InvalidValueHandling::DropInvalid);
+        let r_data1 = builder.build_from(data1);
+        let r_data2 = builder.build_from(data2);
+        assert!(r_data1.is_ok());
+        assert!(r_data2.is_ok());
     }
     #[test]
     fn test_invalid_input_infinity() {
@@ -780,16 +775,16 @@ mod tests {
         let y2 = vec![1., 2., 3., std::f64::NEG_INFINITY];
         let x2 = vec![1., 2., 3., 4.];
         let data2 = vec![("Y", y2), ("X", x2)];
-        let model1 = FormulaRegressionBuilder::new()
-            .data(data1)
-            .formula("Y ~ X")
-            .fit();
-        let model2 = FormulaRegressionBuilder::new()
-            .data(data2)
-            .formula("Y ~ X")
-            .fit();
-        assert!(model1.is_err());
-        assert!(model2.is_err());
+        let r_data1 = RegressionDataBuilder::new().build_from(data1.to_owned());
+        let r_data2 = RegressionDataBuilder::new().build_from(data2.to_owned());
+        assert!(r_data1.is_err());
+        assert!(r_data2.is_err());
+        let builder = RegressionDataBuilder::new();
+        let builder = builder.invalid_value_handling(InvalidValueHandling::DropInvalid);
+        let r_data1 = builder.build_from(data1);
+        let r_data2 = builder.build_from(data2);
+        assert!(r_data1.is_ok());
+        assert!(r_data2.is_ok());
     }
 }
 #[cfg(all(feature = "unstable", test))]
