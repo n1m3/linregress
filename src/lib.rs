@@ -248,6 +248,7 @@ impl FormulaRegressionBuilder {
 #[derive(Debug, Clone)]
 /// A container struct for the regression data. We use this so that `FormulaRegressionBuilder`
 /// can implement the `Copy` trait by only keeping a reference to this struct.
+/// This struct is obtained using a `RegressionDataBuilder`.
 pub struct RegressionData<'a> {
     data: HashMap<Cow<'a, str>, Vec<f64>>,
 }
@@ -258,7 +259,12 @@ impl<'a> RegressionData<'a> {
     ///
     /// The iterator must consist of tupels of the form `(S, Vec<f64>)` where
     /// `S` is a type that can be converted to a `Cow<'a, str>`.
-    fn new<I, S>(data: I) -> RegressionData<'a>
+    ///
+    /// `invalid_value_handling` specifies what to do if invalid data is encountered.
+    fn new<I, S>(
+        data: I,
+        invalid_value_handling: InvalidValueHandling,
+    ) -> Result<RegressionData<'a>, Error>
     where
         I: IntoIterator<Item = (S, Vec<f64>)>,
         S: Into<Cow<'a, str>>,
@@ -267,7 +273,121 @@ impl<'a> RegressionData<'a> {
         for (key, value) in data {
             temp.insert(key.into(), value);
         }
-        Self { data: temp }
+        if Self::check_if_data_is_valid(&temp) {
+            return Ok(Self { data: temp });
+        }
+        match invalid_value_handling {
+            InvalidValueHandling::ReturnError => bail!(
+                "The data contains a non real value (NaN or infinity or negative infinity). \
+                 If you would like to silently drop these values configure the builder with \
+                 InvalidValueHandling::DropInvalid."
+            ),
+            InvalidValueHandling::DropInvalid => bail!("Not implemented"),
+            _ => bail!("Unkown InvalidValueHandling option"),
+        }
+    }
+    fn check_if_data_is_valid(data: &HashMap<Cow<'a, str>, Vec<f64>>) -> bool {
+        for column in data.values() {
+            if column.iter().any(|x| !x.is_finite()) {
+                return false;
+            }
+        }
+        true
+    }
+}
+
+/// A builder to create a RegressionData struct for use with a `FormulaRegressionBuilder`.
+#[derive(Debug, Clone)]
+pub struct RegressionDataBuilder {
+    handle_invalid_values: InvalidValueHandling,
+}
+
+impl Default for RegressionDataBuilder {
+    fn default() -> RegressionDataBuilder {
+        RegressionDataBuilder {
+            handle_invalid_values: InvalidValueHandling::default(),
+        }
+    }
+}
+
+impl RegressionDataBuilder {
+    /// Crate a new `RegressionDataBuilder`
+    pub fn new() -> Self {
+        Self::default()
+    }
+    /// Configure how to handle non real `f64` values (NaN or infinity or negative infinity).
+    ///
+    /// The default is `ReturnError`.
+    pub fn invalid_value_handling(mut self, setting: InvalidValueHandling) -> Self {
+        self.handle_invalid_values = setting;
+        self
+    }
+    /// Build a `RegressionData` struct from the given data.
+    ///
+    /// Any type that implements the [`IntoIterator`] trait can be used for the data.
+    /// This could for example be a [`Hashmap`] or a [`Vec`].
+    ///
+    /// The iterator must consist of tupels of the form `(S, Vec<f64>)` where
+    /// `S` is a type that implements `Into<Cow<str>>`, such as [`String`] or [`str`].
+    ///
+    /// You can think of this format as the representation of a table of data where
+    /// each tuple `(S, Vec<f64>)` represents a column. The `S` is the header or label of the
+    /// column and the `Vec<f64>` contains the data of the column.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::collections::HashMap;
+    /// use linregress::RegressionDataBuilder;
+    ///
+    /// # use failure::Error;
+    /// # fn main() -> Result<(), Error> {
+    /// let builder = RegressionDataBuilder::new();
+    ///
+    /// let mut data1 = HashMap::new();
+    /// data1.insert("Y", vec![1., 2., 3., 4.]);
+    /// data1.insert("X", vec![4., 3., 2., 1.]);
+    /// let regression_data1 = RegressionDataBuilder::new().build_from(data1)?;
+    ///
+    /// let y = vec![1., 2., 3., 4.];
+    /// let x = vec![4., 3., 2., 1.];
+    /// let data2 = vec![("X", x), ("Y", y)];
+    /// let regression_data2 = RegressionDataBuilder::new().build_from(data2)?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// [`IntoIterator`]: https://doc.rust-lang.org/std/iter/trait.IntoIterator.html
+    /// [`Hashmap`]: https://doc.rust-lang.org/std/collections/struct.HashMap.html
+    /// [`Vec`]: https://doc.rust-lang.org/std/vec/struct.Vec.html
+    /// [`String`]: https://doc.rust-lang.org/std/string/struct.String.html
+    /// [`str`]: https://doc.rust-lang.org/std/primitive.str.html
+    pub fn build_from<'a, I, S>(self, data: I) -> Result<RegressionData<'a>, Error>
+    where
+        I: IntoIterator<Item = (S, Vec<f64>)>,
+        S: Into<Cow<'a, str>>,
+    {
+        Ok(RegressionData::new(data, self.handle_invalid_values)?)
+    }
+}
+
+/// How to proceed if given non real `f64` values (NaN or infinity or negative infinity).
+///
+/// The default is `ReturnError`.
+#[derive(Debug, Clone, Copy)]
+pub enum InvalidValueHandling {
+    /// Return an error to the caller.
+    ReturnError,
+    /// Drop the columns containing the invalid values.
+    DropInvalid,
+    /// Destructuring should not be exhaustive
+    #[doc(hidden)]
+    __Nonexhaustive,
+}
+
+impl Default for InvalidValueHandling {
+    fn default() -> InvalidValueHandling {
+        InvalidValueHandling::ReturnError
     }
 }
 
