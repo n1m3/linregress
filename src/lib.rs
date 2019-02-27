@@ -318,7 +318,7 @@ impl<'a> RegressionData<'a> {
 }
 
 /// A builder to create a RegressionData struct for use with a `FormulaRegressionBuilder`.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct RegressionDataBuilder {
     handle_invalid_values: InvalidValueHandling,
 }
