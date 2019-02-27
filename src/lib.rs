@@ -258,10 +258,13 @@ impl<'a> RegressionData<'a> {
         }
         let first_key = temp.keys().into_iter().nth(0);
         if first_key.is_none() {
-            bail!("The data contains an empty column");
+            bail!("The data contains no columns.");
         }
         let first_key = first_key.unwrap();
         let first_len = temp[first_key].len();
+        if first_len == 0 {
+            bail!("The data contains an empty column.");
+        }
         for key in temp.keys() {
             let this_len = temp[key].len();
             if this_len != first_len {
