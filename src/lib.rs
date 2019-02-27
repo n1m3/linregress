@@ -63,7 +63,7 @@
 use failure::{bail, err_msg, Error};
 use nalgebra::{DMatrix, DVector, RowDVector};
 use std::borrow::Cow;
-use std::collections::HashMap;
+use std::collections::{BTreeSet, HashMap};
 use std::iter;
 
 mod special_functions;
@@ -294,7 +294,10 @@ impl<'a> RegressionData<'a> {
                  If you would like to silently drop these values configure the builder with \
                  InvalidValueHandling::DropInvalid."
             ),
-            InvalidValueHandling::DropInvalid => bail!("Not implemented"),
+            InvalidValueHandling::DropInvalid => {
+                let temp = Self::drop_invalid_values(temp);
+                return Ok(Self { data: temp });
+            }
             _ => bail!("Unkown InvalidValueHandling option"),
         }
     }
@@ -305,6 +308,26 @@ impl<'a> RegressionData<'a> {
             }
         }
         true
+    }
+    fn drop_invalid_values(
+        data: HashMap<Cow<'a, str>, Vec<f64>>,
+    ) -> HashMap<Cow<'a, str>, Vec<f64>> {
+        let mut invalid_rows: BTreeSet<usize> = BTreeSet::new();
+        for column in data.values() {
+            for (index, value) in column.into_iter().enumerate() {
+                if !value.is_finite() {
+                    invalid_rows.insert(index);
+                }
+            }
+        }
+        let mut cleaned_data = HashMap::new();
+        for (key, mut column) in data {
+            for index in &invalid_rows {
+                column.remove(*index);
+            }
+            cleaned_data.insert(key, column);
+        }
+        cleaned_data
     }
 }
 
