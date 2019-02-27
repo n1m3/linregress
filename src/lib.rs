@@ -235,8 +235,8 @@ impl FormulaRegressionBuilder {
         RegressionModel::try_from_matrices_and_regressor_names(input_vector, output_matrix, outputs)
     }
     fn check_if_data_valid(data: &HashMap<String, Vec<f64>>) -> Result<(), Error> {
-        for (_header, column) in data {
-            if column.into_iter().any(|x| !x.is_finite()) {
+        for column in data.values() {
+            if column.iter().any(|x| !x.is_finite()) {
                 bail!("The data contains a non real value (NaN or infinity or negative infinity)");
             }
         }
@@ -414,7 +414,7 @@ fn fit_ols_pinv(
     inputs: RowDVector<f64>,
     outputs: DMatrix<f64>,
 ) -> Result<LowLevelRegressionResult, Error> {
-    if inputs.len() < 1 {
+    if inputs.is_empty() {
         bail!("Fitting the model failed because the input vector is empty");
     }
     if outputs.nrows() < 1 || outputs.ncols() < 1 {
