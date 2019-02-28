@@ -786,6 +786,34 @@ mod tests {
         assert!(r_data1.is_ok());
         assert!(r_data2.is_ok());
     }
+    #[test]
+    fn test_drop_invalid_values() {
+        let mut data: HashMap<Cow<'_, str>, Vec<f64>> = HashMap::new();
+        data.insert("Y".into(), vec![-1., -2., -3., -4.]);
+        data.insert("foo".into(), vec![1., 2., 12., 4.]);
+        data.insert("bar".into(), vec![1., 1., 7., 4.]);
+        data.insert("baz".into(), vec![1.3333, 2.754, 3.12, 4.11]);
+        assert_eq!(RegressionData::drop_invalid_values(data.to_owned()), data);
+        data.insert(
+            "invalid".into(),
+            vec![std::f64::NAN, 42., std::f64::NEG_INFINITY, 23.11],
+        );
+        data.insert(
+            "invalid2".into(),
+            vec![1.337, -3.14, std::f64::INFINITY, 11.111111],
+        );
+        let mut ref_data: HashMap<Cow<'_, str>, Vec<f64>> = HashMap::new();
+        ref_data.insert("Y".into(), vec![-2., -4.]);
+        ref_data.insert("foo".into(), vec![2., 4.]);
+        ref_data.insert("bar".into(), vec![1., 4.]);
+        ref_data.insert("baz".into(), vec![2.754, 4.11]);
+        ref_data.insert("invalid".into(), vec![42., 23.11]);
+        ref_data.insert("invalid2".into(), vec![-3.14, 11.111111]);
+        assert_eq!(
+            ref_data,
+            RegressionData::drop_invalid_values(data.to_owned())
+        );
+    }
 }
 #[cfg(all(feature = "unstable", test))]
 mod bench {
