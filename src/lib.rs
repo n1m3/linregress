@@ -255,6 +255,15 @@ impl<'a> RegressionData<'a> {
             ),
             InvalidValueHandling::DropInvalid => {
                 let temp = Self::drop_invalid_values(temp);
+                let first_key = temp
+                    .keys()
+                    .into_iter()
+                    .nth(0)
+                    .expect("Cleaned data has no columns.");
+                let first_len = temp[first_key].len();
+                if first_len == 0 {
+                    bail!("The cleaned data is empty.");
+                }
                 return Ok(Self { data: temp });
             }
             _ => bail!("Unkown InvalidValueHandling option"),
