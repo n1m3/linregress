@@ -814,6 +814,17 @@ mod tests {
             RegressionData::drop_invalid_values(data.to_owned())
         );
     }
+    #[test]
+    fn test_all_invalid_input() {
+        let data = vec![
+            ("Y", vec![1., 2., 3.]),
+            ("X", vec![std::f64::NAN, std::f64::NAN, std::f64::NAN]),
+        ];
+        let builder = RegressionDataBuilder::new();
+        let builder = builder.invalid_value_handling(InvalidValueHandling::DropInvalid);
+        let r_data = builder.build_from(data);
+        assert!(r_data.is_err());
+    }
 }
 #[cfg(all(feature = "unstable", test))]
 mod bench {
