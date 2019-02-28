@@ -281,7 +281,7 @@ impl<'a> RegressionData<'a> {
         }
         let mut cleaned_data = HashMap::new();
         for (key, mut column) in data {
-            for index in &invalid_rows {
+            for index in invalid_rows.iter().rev() {
                 column.remove(*index);
             }
             cleaned_data.insert(key, column);
