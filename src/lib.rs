@@ -192,8 +192,8 @@ impl<'a> FormulaRegressionBuilder<'a> {
 }
 
 #[derive(Debug, Clone)]
-/// A container struct for the regression data. We use this so that `FormulaRegressionBuilder`
-/// can implement the `Copy` trait by only keeping a reference to this struct.
+/// A container struct for the regression data.
+///
 /// This struct is obtained using a `RegressionDataBuilder`.
 pub struct RegressionData<'a> {
     data: HashMap<Cow<'a, str>, Vec<f64>>,
