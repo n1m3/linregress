@@ -75,6 +75,8 @@ use special_functions::stdtr;
 /// Given a dataset and a regression formula this builder
 /// will produce an ordinary least squared linear regression model.
 ///
+/// See [`formula`] and [`data`] for details on how to configure this builder.
+///
 /// The pseudo inverse method is used to fit the model.
 ///
 /// # Usage
@@ -95,6 +97,9 @@ use special_functions::stdtr;
 /// # Ok(())
 /// # }
 /// ```
+///
+/// [`formula`]: struct.FormulaRegressionBuilder.html#method.formula
+/// [`data`]: struct.FormulaRegressionBuilder.html#method.data
 #[derive(Debug, Clone)]
 pub struct FormulaRegressionBuilder<'a> {
     data: Option<&'a RegressionData<'a>>,
@@ -115,8 +120,11 @@ impl<'a> FormulaRegressionBuilder<'a> {
     }
     /// Set the data to be used for the regression.
     ///
-    /// The data has to be given as a reference to a `RegressionData` struct.
-    /// See `RegressionDataBuilder` for details.
+    /// The data has to be given as a reference to a [`RegressionData`] struct.
+    /// See [`RegressionDataBuilder`] for details.
+    ///
+    /// [`RegressionData`]: struct.RegressionData.html
+    /// [`RegressionDataBuilder`]: struct.RegressionDataBuilder.html
     pub fn data(mut self, data: &'a RegressionData<'a>) -> Self {
         self.data = Some(data);
         self
@@ -194,7 +202,9 @@ impl<'a> FormulaRegressionBuilder<'a> {
 #[derive(Debug, Clone)]
 /// A container struct for the regression data.
 ///
-/// This struct is obtained using a `RegressionDataBuilder`.
+/// This struct is obtained using a [`RegressionDataBuilder`].
+///
+/// [`RegressionDataBuilder`]: struct.RegressionDataBuilder.html
 pub struct RegressionData<'a> {
     data: HashMap<Cow<'a, str>, Vec<f64>>,
 }
@@ -280,7 +290,9 @@ impl<'a> RegressionData<'a> {
     }
 }
 
-/// A builder to create a RegressionData struct for use with a `FormulaRegressionBuilder`.
+/// A builder to create a RegressionData struct for use with a [`FormulaRegressionBuilder`].
+///
+/// [`FormulaRegressionBuilder`]: struct.FormulaRegressionBuilder.html
 #[derive(Debug, Clone, Copy)]
 pub struct RegressionDataBuilder {
     handle_invalid_values: InvalidValueHandling,
@@ -295,18 +307,36 @@ impl Default for RegressionDataBuilder {
 }
 
 impl RegressionDataBuilder {
-    /// Crate a new `RegressionDataBuilder`
+    /// Create a new [`RegressionDataBuilder`]
+    ///
+    /// [`RegressionDataBuilder`]: struct.RegressionDataBuilder.html
     pub fn new() -> Self {
         Self::default()
     }
-    /// Configure how to handle non real `f64` values (NaN or infinity or negative infinity).
+    /// Configure how to handle non real `f64` values (NaN or infinity or negative infinity) using
+    /// a variant of the [`InvalidValueHandling`] enum.
     ///
-    /// The default is `ReturnError`.
+    /// The default value is [`ReturnError`].
+    ///
+    /// # Example
+    /// ```
+    /// use linregress::{InvalidValueHandling, RegressionDataBuilder};
+    ///
+    /// # use failure::Error;
+    /// # fn main() -> Result<(), Error> {
+    /// let builder = RegressionDataBuilder::new();
+    /// let builder = builder.invalid_value_handling(InvalidValueHandling::DropInvalid);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// [`InvalidValueHandling`]: enum.InvalidValueHandling.html
+    /// [`ReturnError`]: enum.InvalidValueHandling.html#variant.ReturnError
     pub fn invalid_value_handling(mut self, setting: InvalidValueHandling) -> Self {
         self.handle_invalid_values = setting;
         self
     }
-    /// Build a `RegressionData` struct from the given data.
+    /// Build a [`RegressionData`] struct from the given data.
     ///
     /// Any type that implements the [`IntoIterator`] trait can be used for the data.
     /// This could for example be a [`Hashmap`] or a [`Vec`].
@@ -341,6 +371,7 @@ impl RegressionDataBuilder {
     /// # }
     /// ```
     ///
+    /// [`RegressionData`]: struct.RegressionData.html
     /// [`IntoIterator`]: https://doc.rust-lang.org/std/iter/trait.IntoIterator.html
     /// [`Hashmap`]: https://doc.rust-lang.org/std/collections/struct.HashMap.html
     /// [`Vec`]: https://doc.rust-lang.org/std/vec/struct.Vec.html
@@ -357,7 +388,12 @@ impl RegressionDataBuilder {
 
 /// How to proceed if given non real `f64` values (NaN or infinity or negative infinity).
 ///
-/// The default is `ReturnError`.
+/// Used with [`RegressionDataBuilder.invalid_value_handling`]
+///
+/// The default is [`ReturnError`].
+///
+/// [`RegressionDataBuilder.invalid_value_handling`]: struct.RegressionDataBuilder.html#method.invalid_value_handling
+/// [`ReturnError`]: enum.InvalidValueHandling.html#variant.ReturnError
 #[derive(Debug, Clone, Copy)]
 pub enum InvalidValueHandling {
     /// Return an error to the caller.
