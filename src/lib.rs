@@ -847,10 +847,11 @@ mod bench {
         let x2 = vec![729.53, 439.0367, 42.054, 1., 0.];
         let x3 = vec![258.589, 616.297, 215.061, 498.361, 0.];
         let data = vec![("Y", y), ("X1", x1), ("X2", x2), ("X3", x3)];
+        let data = RegressionDataBuilder::new().build_from(data).unwrap();
         let formula = "Y ~ X1 + X2 + X3";
         b.iter(|| {
             FormulaRegressionBuilder::new()
-                .data(data.to_owned())
+                .data(&data)
                 .formula(formula)
                 .fit()
         });
