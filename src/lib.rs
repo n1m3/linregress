@@ -228,10 +228,10 @@ impl<'a> RegressionData<'a> {
         I: IntoIterator<Item = (S, Vec<f64>)>,
         S: Into<Cow<'a, str>>,
     {
-        let mut temp = HashMap::new();
-        for (key, value) in data {
-            temp.insert(key.into(), value);
-        }
+        let temp: HashMap<_, _> = data
+            .into_iter()
+            .map(|(key, value)| (key.into(), value))
+            .collect();
         let first_key = temp.keys().into_iter().nth(0);
         if first_key.is_none() {
             bail!("The data contains no columns.");
