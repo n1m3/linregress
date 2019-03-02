@@ -61,15 +61,17 @@
 
 #![warn(rust_2018_idioms)]
 #![cfg_attr(feature = "unstable", feature(test))]
-use failure::{bail, err_msg, Error};
-use hashbrown::HashMap;
-use nalgebra::{DMatrix, DVector, RowDVector};
 use std::borrow::Cow;
 use std::collections::BTreeSet;
 use std::iter;
 
-mod special_functions;
+use failure::{bail, err_msg, Error};
+use hashbrown::HashMap;
+use nalgebra::{DMatrix, DVector, RowDVector};
+
 use special_functions::stdtr;
+
+mod special_functions;
 
 /// A builder to create and fit a linear regression model.
 ///
