@@ -62,9 +62,10 @@
 #![warn(rust_2018_idioms)]
 #![cfg_attr(feature = "unstable", feature(test))]
 use failure::{bail, err_msg, Error};
+use hashbrown::HashMap;
 use nalgebra::{DMatrix, DVector, RowDVector};
 use std::borrow::Cow;
-use std::collections::{BTreeSet, HashMap};
+use std::collections::BTreeSet;
 use std::iter;
 
 mod special_functions;

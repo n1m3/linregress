@@ -6,6 +6,7 @@ edition = "2018"
 
 [dependencies]
 failure = "~0.1.5"
+hashbrown = "~0.1.8"
 nalgebra = "~0.17.0"
 statrs = "~0.10.0"
 
