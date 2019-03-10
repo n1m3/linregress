@@ -65,7 +65,7 @@ use std::borrow::Cow;
 use std::collections::BTreeSet;
 use std::iter;
 
-use failure::{bail, err_msg, Error};
+use failure::{bail, err_msg, format_err, Error};
 use hashbrown::HashMap;
 use nalgebra::{DMatrix, DVector, RowDVector};
 
@@ -177,7 +177,7 @@ impl<'a> FormulaRegressionBuilder<'a> {
         }
         let input_vector = data
             .get(input)
-            .ok_or_else(|| err_msg(format!("{} not found in data", input)))?;
+            .ok_or_else(|| format_err!("{} not found in data", input))?;
         let input_vector = RowDVector::from_vec(input_vector.to_vec());
         let mut output_matrix = Vec::new();
         // Add column of all ones as the first column of the matrix
@@ -187,12 +187,12 @@ impl<'a> FormulaRegressionBuilder<'a> {
         for output in outputs.to_owned() {
             let output_vec = data
                 .get(output)
-                .ok_or_else(|| err_msg(format!("{} not found in data", output)))?;
+                .ok_or_else(|| format_err!("{} not found in data", output))?;
             if output_vec.len() != input_vector.len() {
-                bail!(format!(
+                bail!(
                     "Regressor dimensions for {} do not match regressand dimensions",
                     output
-                ));
+                );
             }
             output_matrix.extend(output_vec.iter());
         }
