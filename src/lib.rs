@@ -232,7 +232,7 @@ impl<'a> RegressionData<'a> {
             .into_iter()
             .map(|(key, value)| (key.into(), value))
             .collect();
-        let first_key = temp.keys().into_iter().nth(0);
+        let first_key = temp.keys().nth(0);
         if first_key.is_none() {
             bail!("The data contains no columns.");
         }
@@ -258,16 +258,12 @@ impl<'a> RegressionData<'a> {
             ),
             InvalidValueHandling::DropInvalid => {
                 let temp = Self::drop_invalid_values(temp);
-                let first_key = temp
-                    .keys()
-                    .into_iter()
-                    .nth(0)
-                    .expect("Cleaned data has no columns.");
+                let first_key = temp.keys().nth(0).expect("Cleaned data has no columns.");
                 let first_len = temp[first_key].len();
                 if first_len == 0 {
                     bail!("The cleaned data is empty.");
                 }
-                return Ok(Self { data: temp });
+                Ok(Self { data: temp })
             }
             _ => bail!("Unkown InvalidValueHandling option"),
         }
@@ -285,7 +281,7 @@ impl<'a> RegressionData<'a> {
     ) -> HashMap<Cow<'a, str>, Vec<f64>> {
         let mut invalid_rows: BTreeSet<usize> = BTreeSet::new();
         for column in data.values() {
-            for (index, value) in column.into_iter().enumerate() {
+            for (index, value) in column.iter().enumerate() {
                 if !value.is_finite() {
                     invalid_rows.insert(index);
                 }
