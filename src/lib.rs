@@ -744,10 +744,19 @@ mod tests {
         assert!(data.is_err());
     }
     #[test]
-    fn test_invalid_input_wrong_shape() {
+    fn test_invalid_input_wrong_shape_x() {
         let y = vec![1., 2., 3.];
         let x1 = vec![1., 2., 3.];
         let x2 = vec![1., 2.];
+        let data = vec![("Y", y), ("X1", x1), ("X2", x2)];
+        let data = RegressionDataBuilder::new().build_from(data);
+        assert!(data.is_err());
+    }
+    #[test]
+    fn test_invalid_input_wrong_shape_y() {
+        let y = vec![1., 2., 3., 4.];
+        let x1 = vec![1., 2., 3.];
+        let x2 = vec![1., 2., 3.];
         let data = vec![("Y", y), ("X1", x1), ("X2", x2)];
         let data = RegressionDataBuilder::new().build_from(data);
         assert!(data.is_err());
