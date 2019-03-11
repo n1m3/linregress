@@ -3,6 +3,14 @@ name = "linregress"
 version = "0.1.0"
 authors = ["Nils Mehrtens <nils@hasinila.de>"]
 edition = "2018"
+description = "ordinary least squared linear regression with some basic statistics"
+documentation = "https://docs.rs/linregress"
+homepage = "https://github.com/n1m3/linregress"
+repository = "https://github.com/n1m3/linregress"
+readme = "README.md"
+keywords = ["statistics", "regression", "ols"]
+license = "MIT"
+exclude = ["*.sh"]
 
 [dependencies]
 failure = "~0.1.5"
