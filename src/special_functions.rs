@@ -311,9 +311,9 @@ fn inc_bd(a: f64, b: f64, x: f64) -> f64 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cephes;
     use quickcheck::TestResult;
     use quickcheck_macros::quickcheck;
+    use stdtr;
     fn assert_almost_equal(a: f64, b: f64) {
         if (a - b).abs() > 1.0E-14 {
             panic!("{:?} vs {:?}", a, b);
@@ -341,7 +341,7 @@ mod tests {
         } else if x < 0. || x > 1. {
             return TestResult::discard();
         }
-        let passed = (inc_beta(a, b, x) - cephes::unchecked_inc_beta(a, b, x)).abs() < 1.0E-12;
+        let passed = (inc_beta(a, b, x) - stdtr::unchecked_inc_beta(a, b, x)).abs() < 1.0E-12;
         TestResult::from_bool(passed)
     }
     #[quickcheck]
@@ -349,7 +349,7 @@ mod tests {
         if k <= 0 {
             return TestResult::discard();
         }
-        let passed = (stdtr(k.into(), t) - cephes::unchecked_stdr(k, t)).abs() < 1.0E-14;
+        let passed = (stdtr(k.into(), t) - stdtr::unchecked_stdr(k, t)).abs() < 1.0E-14;
         TestResult::from_bool(passed)
     }
 }
