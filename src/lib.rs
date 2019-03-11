@@ -1,6 +1,7 @@
 /*!
   Crate `linregress` provides an easy to use implementation of ordinary
-  least squared linear regression.
+  least squared linear regression with some basic statistics.
+  See [`RegressionModel`] for details.
 
   The builder [`FormulaRegressionBuilder`] is used to construct a model from a
   table of data and a R-style formula. Currently only very simple formulae are supported,
@@ -55,6 +56,7 @@
   # }
   ```
 
+  [`RegressionModel`]: struct.RegressionModel.html
   [`FormulaRegressionBuilder`]: struct.FormulaRegressionBuilder.html
   [`FormulaRegressionBuilder.formula`]: struct.FormulaRegressionBuilder.html#method.formula
 */
@@ -141,7 +143,7 @@ impl<'a> FormulaRegressionBuilder<'a> {
     ///
     /// Note that there is currently no special support for categorical variables.
     /// So if you have a categorical variable with more than two distinct values
-    /// you will need to perform "dummy coding" yourself.
+    /// or values that are not `0` and `1` you will need to perform "dummy coding" yourself.
     pub fn formula<T: Into<Cow<'a, str>>>(mut self, formula: T) -> Self {
         self.formula = Some(formula.into());
         self
