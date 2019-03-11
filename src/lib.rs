@@ -427,7 +427,7 @@ impl Default for InvalidValueHandling {
 ///[`FormulaRegressionBuilder.fit()`]: struct.FormulaRegressionBuilder.html#method.fit
 #[derive(Debug, Clone)]
 pub struct RegressionModel {
-    /// The models intercept and slopes (also known as betas).
+    /// The model's intercept and slopes (also known as betas).
     pub parameters: RegressionParameters,
     /// The standard errors of the parameter estimates.
     pub se: RegressionParameters,
@@ -437,7 +437,7 @@ pub struct RegressionModel {
     pub rsquared: f64,
     /// Adjusted R-squared of the model.
     pub rsquared_adj: f64,
-    /// The two-tailed p values for the t-stats of the params.
+    /// The two-tailed p-values for the t-statistics of the params.
     pub pvalues: RegressionParameters,
     /// The residuals of the model.
     pub residuals: RegressionParameters,
@@ -637,7 +637,7 @@ fn subtract_value_from_matrix(matrix: &DMatrix<f64>, value: f64) -> DMatrix<f64>
     }
     DMatrix::from_vec(matrix.nrows(), matrix.ncols(), v)
 }
-/// Calculates the standard errors given a models covariate parameters
+/// Calculates the standard errors given a model's covariate parameters
 fn get_se_from_cov_params(matrix: &DMatrix<f64>) -> Result<DMatrix<f64>, Error> {
     let mut v = Vec::new();
     for row_index in 0..matrix.ncols() {
