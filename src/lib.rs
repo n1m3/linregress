@@ -359,6 +359,9 @@ impl RegressionDataBuilder {
     /// each tuple `(S, Vec<f64>)` represents a column. The `S` is the header or label of the
     /// column and the `Vec<f64>` contains the data of the column.
     ///
+    /// Because `~` and `+` are used as separators in the formula they may not be used in the name
+    /// of a data column.
+    ///
     /// # Example
     ///
     /// ```
