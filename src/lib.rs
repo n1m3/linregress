@@ -246,6 +246,11 @@ impl<'a> RegressionData<'a> {
                 this_len == first_len,
                 "The lengths of the columns in the given data are inconsistent."
             );
+            ensure!(
+                !key.contains('~') && !key.contains('+'),
+                "The column names may not contain `~` or `+`, because they are used \
+                 as separators in the formula."
+            );
         }
         if Self::check_if_data_is_valid(&temp) {
             return Ok(Self { data: temp });
