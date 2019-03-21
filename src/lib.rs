@@ -840,6 +840,14 @@ mod tests {
         let r_data = builder.build_from(data);
         assert!(r_data.is_err());
     }
+    #[test]
+    fn test_invalid_column_names() {
+        let data1 = vec![("x~f", vec![1., 2., 3.]), ("foo", vec![0., 0., 0.])];
+        let data2 = vec![("foo", vec![1., 2., 3.]), ("foo+", vec![0., 0., 0.])];
+        let builder = RegressionDataBuilder::new();
+        assert!(builder.build_from(data1).is_err());
+        assert!(builder.build_from(data2).is_err());
+    }
 }
 #[cfg(all(feature = "unstable", test))]
 mod bench {
