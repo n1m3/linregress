@@ -136,10 +136,10 @@ impl<'a> FormulaRegressionBuilder<'a> {
     }
     /// Set the formula to use for the regression.
     ///
-    /// The expected format is "<regressand> ~ <regressor 1> + <regressor 2>".
+    /// The expected format is `<regressand> ~ <regressor 1> + <regressor 2>`.
     ///
     /// E.g. for a regressand named Y and three regressors named A, B and C
-    /// the correct format would be "Y ~ A + B + C".
+    /// the correct format would be `Y ~ A + B + C`.
     ///
     /// Note that there is currently no special support for categorical variables.
     /// So if you have a categorical variable with more than two distinct values
