@@ -318,7 +318,7 @@ impl Default for RegressionDataBuilder {
 }
 
 impl RegressionDataBuilder {
-    /// Create a new [`RegressionDataBuilder`]
+    /// Create a new [`RegressionDataBuilder`].
     ///
     /// [`RegressionDataBuilder`]: struct.RegressionDataBuilder.html
     pub fn new() -> Self {
