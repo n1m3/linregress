@@ -156,6 +156,12 @@ impl<'a> FormulaRegressionBuilder<'a> {
     /// [`data`]: struct.FormulaRegressionBuilder.html#method.data
     /// [`formula`]: struct.FormulaRegressionBuilder.html#method.formula
     pub fn fit(self) -> Result<RegressionModel, Error> {
+        let (input_vector, output_matrix, outputs) = Self::get_matrices_and_regressor_names(self)?;
+        RegressionModel::try_from_matrices_and_regressor_names(input_vector, output_matrix, outputs)
+    }
+    fn get_matrices_and_regressor_names(
+        self,
+    ) -> Result<(RowDVector<f64>, DMatrix<f64>, Vec<String>), Error> {
         let data: Result<_, Error> = self
             .data
             .ok_or_else(|| err_msg("Cannot fit model without data"));
@@ -201,7 +207,7 @@ impl<'a> FormulaRegressionBuilder<'a> {
         }
         let output_matrix = DMatrix::from_vec(input_vector.len(), outputs.len() + 1, output_matrix);
         let outputs: Vec<_> = outputs.iter().map(|x| x.to_string()).collect();
-        RegressionModel::try_from_matrices_and_regressor_names(input_vector, output_matrix, outputs)
+        Ok((input_vector, output_matrix, outputs))
     }
 }
 
