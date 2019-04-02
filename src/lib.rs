@@ -187,7 +187,7 @@ impl<'a> FormulaRegressionBuilder<'a> {
             regressor_names: output_names.to_vec(),
         })
     }
-    fn get_matrices_and_regressor_names(self) -> Result<(FittingData), Error> {
+    fn get_matrices_and_regressor_names(self) -> Result<FittingData, Error> {
         let data: Result<_, Error> = self
             .data
             .ok_or_else(|| err_msg("Cannot fit model without data"));
