@@ -160,6 +160,33 @@ impl<'a> FormulaRegressionBuilder<'a> {
             Self::get_matrices_and_regressor_names(self)?;
         RegressionModel::try_from_matrices_and_regressor_names(input_vector, output_matrix, outputs)
     }
+    /// Like [`fit`] but does not perfom any statistics on the resulting model.
+    /// Returns a [`RegressionParameters`] struct containing the model parameters
+    /// if successfull.
+    ///
+    /// This is usefull if you do not care about the statistics or the model and data
+    /// you want to fit result in too few residual degrees of freedom to perform
+    /// statistics.
+    ///
+    /// [`fit`]: struct.FormulaRegressionBuilder.html#method.fit
+    /// [`RegressionParameters`]: struct.RegressionParameters.html
+    pub fn fit_without_statistics(self) -> Result<RegressionParameters, Error> {
+        let FittingData(input_vector, output_matrix, output_names) =
+            Self::get_matrices_and_regressor_names(self)?;
+        let low_level_result = fit_ols_pinv(input_vector, output_matrix)?;
+        let parameters = low_level_result.params;
+        let intercept = parameters[0];
+        let slopes: Vec<_> = parameters.iter().cloned().skip(1).collect();
+        ensure!(
+            output_names.len() == slopes.len(),
+            "Number of slopes and output names is inconsistent"
+        );
+        Ok(RegressionParameters {
+            intercept_value: intercept,
+            regressor_values: slopes,
+            regressor_names: output_names.to_vec(),
+        })
+    }
     fn get_matrices_and_regressor_names(self) -> Result<(FittingData), Error> {
         let data: Result<_, Error> = self
             .data
@@ -753,6 +780,27 @@ mod tests {
         assert_almost_equal(regression.residuals.intercept_value, residuals[0]);
         assert_slices_almost_equal(&regression.residuals.regressor_values, &residuals[1..]);
         assert_eq!(regression.scale, scale);
+    }
+    #[test]
+    fn test_without_statistics() {
+        use std::collections::HashMap;
+        let inputs = vec![1., 3., 4., 5., 2., 3., 4.];
+        let outputs1 = vec![1., 2., 3., 4., 5., 6., 7.];
+        let outputs2 = vec![7., 6., 5., 4., 3., 2., 1.];
+        let mut data = HashMap::new();
+        data.insert("Y", inputs);
+        data.insert("X1", outputs1);
+        data.insert("X2", outputs2);
+        let data = RegressionDataBuilder::new().build_from(data).unwrap();
+        let regression = FormulaRegressionBuilder::new()
+            .data(&data)
+            .formula("Y ~ X1 + X2")
+            .fit_without_statistics()
+            .expect("Fitting model failed");
+        let model_parameters = vec![0.09523809523809523, 0.5059523809523809, 0.2559523809523808];
+        assert_almost_equal(regression.intercept_value, model_parameters[0]);
+        assert_almost_equal(regression.regressor_values[0], model_parameters[1]);
+        assert_almost_equal(regression.regressor_values[1], model_parameters[2]);
     }
     #[test]
     fn test_invalid_input_empty_matrix() {
