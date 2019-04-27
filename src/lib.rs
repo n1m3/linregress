@@ -96,8 +96,8 @@ mod special_functions;
 /// let data = vec![("Y", y), ("X", x)];
 /// let data = RegressionDataBuilder::new().build_from(data)?;
 /// let model = FormulaRegressionBuilder::new().data(&data).formula("Y ~ X").fit()?;
-/// assert_eq!(model.parameters.intercept_value, 5.0);
-/// assert_eq!(model.parameters.regressor_values[0], -0.9999999999999993);
+/// assert_eq!(model.parameters.intercept_value, 4.999999999999998);
+/// assert_eq!(model.parameters.regressor_values[0], -0.9999999999999989);
 /// assert_eq!(model.parameters.regressor_names[0], "X");
 /// # Ok(())
 /// # }
