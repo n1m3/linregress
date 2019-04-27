@@ -242,12 +242,12 @@ impl<'a> FormulaRegressionBuilder<'a> {
 #[derive(Debug, Clone)]
 struct FittingData(RowDVector<f64>, DMatrix<f64>, Vec<String>);
 
-#[derive(Debug, Clone)]
 /// A container struct for the regression data.
 ///
 /// This struct is obtained using a [`RegressionDataBuilder`].
 ///
 /// [`RegressionDataBuilder`]: struct.RegressionDataBuilder.html
+#[derive(Debug, Clone)]
 pub struct RegressionData<'a> {
     data: HashMap<Cow<'a, str>, Vec<f64>>,
 }
