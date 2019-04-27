@@ -204,7 +204,7 @@ impl<'a> FormulaRegressionBuilder<'a> {
         let input = split_formula[0].trim();
         let outputs: Vec<_> = split_formula[1]
             .split('+')
-            .map(|x| x.trim())
+            .map(str::trim)
             .filter(|x| *x != "")
             .collect();
         ensure!(
