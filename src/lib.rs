@@ -91,7 +91,7 @@ mod special_functions;
 ///
 /// # use failure::Error;
 /// # fn main() -> Result<(), Error> {
-/// let y = vec![1.,2. ,3. , 4.];
+/// let y = vec![1., 2. ,3., 4.];
 /// let x = vec![4., 3., 2., 1.];
 /// let data = vec![("Y", y), ("X", x)];
 /// let data = RegressionDataBuilder::new().build_from(data)?;
