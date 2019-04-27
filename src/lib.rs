@@ -407,8 +407,6 @@ impl RegressionDataBuilder {
     ///
     /// # use failure::Error;
     /// # fn main() -> Result<(), Error> {
-    /// let builder = RegressionDataBuilder::new();
-    ///
     /// let mut data1 = HashMap::new();
     /// data1.insert("Y", vec![1., 2., 3., 4.]);
     /// data1.insert("X", vec![4., 3., 2., 1.]);
