@@ -64,11 +64,10 @@
 #![warn(rust_2018_idioms)]
 #![cfg_attr(feature = "unstable", feature(test))]
 use std::borrow::Cow;
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashMap};
 use std::iter;
 
 use failure::{bail, ensure, err_msg, format_err, Error};
-use hashbrown::HashMap;
 use nalgebra::{DMatrix, DVector, RowDVector};
 
 use special_functions::stdtr;

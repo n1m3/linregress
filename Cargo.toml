@@ -14,7 +14,6 @@ exclude = ["*.sh"]
 
 [dependencies]
 failure = "~0.1.5"
-hashbrown = "~0.3.0"
 nalgebra = "~0.18.0"
 statrs = "~0.10.0"
 
