@@ -1,6 +1,6 @@
 [package]
 name = "linregress"
-version = "0.1.5"
+version = "0.1.6"
 authors = ["Nils Mehrtens <nils@hasinila.de>"]
 edition = "2018"
 description = "ordinary least squared linear regression with some basic statistics"
