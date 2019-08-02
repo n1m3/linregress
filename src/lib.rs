@@ -288,6 +288,12 @@ impl<'a> RegressionData<'a> {
                  as separators in the formula."
             );
         }
+        if Self::check_if_all_columns_are_equal(&temp) {
+            bail!(
+                "All input columns contain only equal values. Fitting this model would lead \
+                 to invalid statistics."
+            )
+        }
         if Self::check_if_data_is_valid(&temp) {
             return Ok(Self { data: temp });
         }
@@ -306,6 +312,18 @@ impl<'a> RegressionData<'a> {
             }
             _ => bail!("Unkown InvalidValueHandling option"),
         }
+    }
+    fn check_if_all_columns_are_equal(data: &HashMap<Cow<'a, str>, Vec<f64>>) -> bool {
+        for column in data.values() {
+            if column.len() < 1 {
+                return false;
+            }
+            let first_iter = iter::repeat(&column[0]).take(column.len());
+            if !first_iter.eq(column.iter()) {
+                return false;
+            }
+        }
+        true
     }
     fn check_if_data_is_valid(data: &HashMap<Cow<'a, str>, Vec<f64>>) -> bool {
         for column in data.values() {
@@ -863,6 +881,14 @@ mod tests {
         let r_data2 = builder.build_from(data2);
         assert!(r_data1.is_ok());
         assert!(r_data2.is_ok());
+    }
+    #[test]
+    fn test_invalid_input_all_equal_columns() {
+        let y = vec![38.0, 38.0, 38.0];
+        let x = vec![42.0, 42.0, 42.0];
+        let data = vec![("y", y), ("x", x)];
+        let data = RegressionDataBuilder::new().build_from(data);
+        assert!(data.is_err());
     }
     #[test]
     fn test_drop_invalid_values() {
