@@ -12,7 +12,7 @@
   ```
   use linregress::{FormulaRegressionBuilder, RegressionDataBuilder};
 
-  # use failure::Error;
+  # use linregress::Error;
   # fn main() -> Result<(), Error> {
   let y = vec![1., 2. ,3. , 4., 5.];
   let x1 = vec![5., 4., 3., 2., 1.];
@@ -67,12 +67,21 @@ use std::borrow::Cow;
 use std::collections::{BTreeSet, HashMap};
 use std::iter;
 
-use failure::{bail, ensure, err_msg, format_err, Error};
 use nalgebra::{DMatrix, DVector, RowDVector};
 
+pub use error::{Error, ErrorKind, InconsitentSlopes};
 use special_functions::stdtr;
 
+mod error;
 mod special_functions;
+
+macro_rules! ensure {
+    ($predicate:expr, $error:expr) => {
+        if !$predicate {
+            return Err($error);
+        }
+    };
+}
 
 /// A builder to create and fit a linear regression model.
 ///
@@ -88,7 +97,7 @@ mod special_functions;
 /// ```
 /// use linregress::{FormulaRegressionBuilder, RegressionDataBuilder};
 ///
-/// # use failure::Error;
+/// # use linregress::Error;
 /// # fn main() -> Result<(), Error> {
 /// let y = vec![1., 2. ,3., 4.];
 /// let x = vec![4., 3., 2., 1.];
@@ -178,7 +187,10 @@ impl<'a> FormulaRegressionBuilder<'a> {
         let slopes: Vec<_> = parameters.iter().cloned().skip(1).collect();
         ensure!(
             output_names.len() == slopes.len(),
-            "Number of slopes and output names is inconsistent"
+            Error::new(ErrorKind::InconsitentSlopes(InconsitentSlopes::new(
+                output_names.len(),
+                slopes.len()
+            )))
         );
         Ok(RegressionParameters {
             intercept_value: intercept,
@@ -187,18 +199,15 @@ impl<'a> FormulaRegressionBuilder<'a> {
         })
     }
     fn get_matrices_and_regressor_names(self) -> Result<FittingData, Error> {
-        let data: Result<_, Error> = self
-            .data
-            .ok_or_else(|| err_msg("Cannot fit model without data"));
-        let formula: Result<_, Error> = self
-            .formula
-            .ok_or_else(|| err_msg("Cannot fit model without formula"));
+        let data: Result<_, Error> = self.data.ok_or_else(|| Error::new(ErrorKind::NoData));
+        let formula: Result<_, Error> =
+            self.formula.ok_or_else(|| Error::new(ErrorKind::NoFormula));
         let data = &data?.data;
         let formula = formula?;
         let split_formula: Vec<_> = formula.split('~').collect();
         ensure!(
             split_formula.len() == 2,
-            "Invalid formula. Expected formula of the form 'y ~ x1 + x2'"
+            Error::new(ErrorKind::InvalidFormula)
         );
         let input = split_formula[0].trim();
         let outputs: Vec<_> = split_formula[1]
@@ -206,13 +215,10 @@ impl<'a> FormulaRegressionBuilder<'a> {
             .map(str::trim)
             .filter(|x| *x != "")
             .collect();
-        ensure!(
-            !outputs.is_empty(),
-            "Invalid formula. Expected formula of the form 'y ~ x1 + x2'"
-        );
+        ensure!(!outputs.is_empty(), Error::new(ErrorKind::InvalidFormula));
         let input_vector = data
             .get(input)
-            .ok_or_else(|| format_err!("{} not found in data", input))?;
+            .ok_or_else(|| Error::new(ErrorKind::ColumnNotInData(input.into())))?;
         let input_vector = RowDVector::from_vec(input_vector.to_vec());
         let mut output_matrix = Vec::new();
         // Add column of all ones as the first column of the matrix
@@ -222,11 +228,12 @@ impl<'a> FormulaRegressionBuilder<'a> {
         for output in outputs.to_owned() {
             let output_vec = data
                 .get(output)
-                .ok_or_else(|| format_err!("{} not found in data", output))?;
+                .ok_or_else(|| Error::new(ErrorKind::ColumnNotInData(output.into())))?;
             ensure!(
                 output_vec.len() == input_vector.len(),
-                "Regressor dimensions for {} do not match regressand dimensions",
-                output
+                Error::new(ErrorKind::RegressorRegressandDimensionMismatch(
+                    output.into()
+                ))
             );
             output_matrix.extend(output_vec.iter());
         }
@@ -272,45 +279,73 @@ impl<'a> RegressionData<'a> {
             .map(|(key, value)| (key.into(), value))
             .collect();
         let first_key = temp.keys().nth(0);
-        ensure!(first_key.is_some(), "The data contains no columns.");
+        ensure!(
+            first_key.is_some(),
+            Error::new(ErrorKind::RegressionDataError(
+                "The data contains no columns.".into()
+            ))
+        );
         let first_key = first_key.unwrap();
         let first_len = temp[first_key].len();
-        ensure!(first_len > 0, "The data contains an empty column.");
+        ensure!(
+            first_len > 0,
+            Error::new(ErrorKind::RegressionDataError(
+                "The data contains an empty column.".into()
+            ))
+        );
         for key in temp.keys() {
             let this_len = temp[key].len();
             ensure!(
                 this_len == first_len,
-                "The lengths of the columns in the given data are inconsistent."
+                Error::new(ErrorKind::RegressionDataError(
+                    "The lengths of the columns in the given data are inconsistent.".into()
+                ))
             );
             ensure!(
                 !key.contains('~') && !key.contains('+'),
-                "The column names may not contain `~` or `+`, because they are used \
-                 as separators in the formula."
+                Error::new(ErrorKind::RegressionDataError(
+                    "The column names may not contain `~` or `+`, because they are used \
+                             as separators in the formula."
+                        .into()
+                ))
             );
         }
         if Self::check_if_all_columns_are_equal(&temp) {
-            bail!(
+            return Err(Error::new(ErrorKind::RegressionDataError(
                 "All input columns contain only equal values. Fitting this model would lead \
-                 to invalid statistics."
-            )
+                     to invalid statistics."
+                    .into(),
+            )));
         }
         if Self::check_if_data_is_valid(&temp) {
             return Ok(Self { data: temp });
         }
         match invalid_value_handling {
-            InvalidValueHandling::ReturnError => bail!(
-                "The data contains a non real value (NaN or infinity or negative infinity). \
+            InvalidValueHandling::ReturnError => {
+                return Err(Error::new(ErrorKind::RegressionDataError(
+                    "The data contains a non real value (NaN or infinity or negative infinity). \
                  If you would like to silently drop these values configure the builder with \
                  InvalidValueHandling::DropInvalid."
-            ),
+                        .into(),
+                )));
+            }
             InvalidValueHandling::DropInvalid => {
                 let temp = Self::drop_invalid_values(temp);
                 let first_key = temp.keys().nth(0).expect("Cleaned data has no columns.");
                 let first_len = temp[first_key].len();
-                ensure!(first_len > 0, "The cleaned data is empty.");
+                ensure!(
+                    first_len > 0,
+                    Error::new(ErrorKind::RegressionDataError(
+                        "The cleaned data is empty.".into()
+                    ))
+                );
                 Ok(Self { data: temp })
             }
-            _ => bail!("Unkown InvalidValueHandling option"),
+            _ => {
+                return Err(Error::new(ErrorKind::RegressionDataError(
+                    "Unkown InvalidValueHandling option".into(),
+                )));
+            }
         }
     }
     fn check_if_all_columns_are_equal(data: &HashMap<Cow<'a, str>, Vec<f64>>) -> bool {
@@ -387,7 +422,7 @@ impl RegressionDataBuilder {
     /// ```
     /// use linregress::{InvalidValueHandling, RegressionDataBuilder};
     ///
-    /// # use failure::Error;
+    /// # use linregress::Error;
     /// # fn main() -> Result<(), Error> {
     /// let builder = RegressionDataBuilder::new();
     /// let builder = builder.invalid_value_handling(InvalidValueHandling::DropInvalid);
@@ -422,7 +457,7 @@ impl RegressionDataBuilder {
     /// use std::collections::HashMap;
     /// use linregress::RegressionDataBuilder;
     ///
-    /// # use failure::Error;
+    /// # use linregress::Error;
     /// # fn main() -> Result<(), Error> {
     /// let mut data1 = HashMap::new();
     /// data1.insert("Y", vec![1., 2., 3., 4.]);
@@ -529,7 +564,8 @@ impl RegressionModel {
         let df_resid = n - rank;
         ensure!(
             df_resid >= 1,
-            "There are not enough residual degrees of freedom to perform statistics on this model"
+            Error::new(ErrorKind::ModelFittingError(
+                "There are not enough residual degrees of freedom to perform statistics on this model".into()))
         );
         let scale = residuals.dot(&residuals) / df_resid as f64;
         let cov_params = normalized_cov_params.to_owned() * scale;
@@ -554,7 +590,10 @@ impl RegressionModel {
         let output_names: Vec<_> = output_names.into_iter().collect();
         ensure!(
             output_names.len() == slopes.len(),
-            "Number of slopes and output names is inconsistent"
+            Error::new(ErrorKind::InconsitentSlopes(InconsitentSlopes::new(
+                output_names.len(),
+                slopes.len(),
+            )))
         );
         let parameters = RegressionParameters {
             intercept_value: intercept,
@@ -612,7 +651,7 @@ impl RegressionParameters {
     /// ```
     /// use linregress::{FormulaRegressionBuilder, RegressionDataBuilder};
     ///
-    /// # use failure::Error;
+    /// # use linregress::Error;
     /// # fn main() -> Result<(), Error> {
     /// let y = vec![1.,2. ,3. , 4.];
     /// let x1 = vec![4., 3., 2., 1.];
@@ -652,25 +691,39 @@ fn fit_ols_pinv(
 ) -> Result<LowLevelRegressionResult, Error> {
     ensure!(
         !inputs.is_empty(),
-        "Fitting the model failed because the input vector is empty"
+        Error::new(ErrorKind::ModelFittingError(
+            "Fitting the model failed because the input vector is empty".into()
+        ))
     );
     ensure!(
         outputs.nrows() >= 1 && outputs.ncols() >= 1,
-        "Fitting the model failed because the output matrix is empty"
+        Error::new(ErrorKind::ModelFittingError(
+            "Fitting the model failed because the output matrix is empty".into()
+        ))
     );
     let singular_values = outputs
         .to_owned()
         .try_svd(false, false, std::f64::EPSILON, 0)
         .ok_or_else(|| {
-            err_msg("computing the singular-value decomposition of the output matrix failed")
+            Error::new(ErrorKind::ModelFittingError(
+                "computing the singular-value decomposition of the output matrix failed".into(),
+            ))
         })?
         .singular_values;
-    let pinv = outputs
-        .pseudo_inverse(0.)
-        .map_err(|_| err_msg("Taking the pinv of the output matrix failed"))?;
+    let pinv = outputs.pseudo_inverse(0.).or_else(|_| {
+        Err(Error::new(ErrorKind::ModelFittingError(
+            "Taking the pinv of the output matrix failed".into(),
+        )))
+    });
+    let pinv = pinv?;
     let normalized_cov_params = &pinv * &pinv.transpose();
     let params = get_sum_of_products(&pinv, &inputs);
-    ensure!(params.len() >= 2, "Invalid parameter matrix");
+    ensure!(
+        params.len() >= 2,
+        Error::new(ErrorKind::ModelFittingError(
+            "Invalid parameter matrix".into()
+        ))
+    );
     Ok(LowLevelRegressionResult {
         params,
         singular_values,
@@ -704,7 +757,10 @@ fn get_se_from_cov_params(matrix: &DMatrix<f64>) -> Result<DMatrix<f64>, Error> 
     let mut v = Vec::new();
     for row_index in 0..matrix.ncols() {
         let row = matrix.row(row_index);
-        ensure!(row_index <= row.len(), "Matrix is not square");
+        ensure!(
+            row_index <= row.len(),
+            Error::new(ErrorKind::ModelFittingError("Matrix is not square".into()))
+        );
         v.push(row[row_index].sqrt());
     }
     Ok(DMatrix::from_vec(matrix.ncols(), 1, v))

@@ -13,7 +13,6 @@ license = "MIT"
 exclude = ["*.sh"]
 
 [dependencies]
-failure = "~0.1.5"
 nalgebra = "~0.18.0"
 statrs = "~0.10.0"
 
