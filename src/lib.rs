@@ -69,7 +69,7 @@ use std::iter;
 
 use nalgebra::{DMatrix, DVector, RowDVector};
 
-pub use error::{Error, ErrorKind, InconsitentSlopes};
+pub use error::{Error, ErrorKind, InconsistentSlopes};
 use special_functions::stdtr;
 
 mod error;
@@ -187,7 +187,7 @@ impl<'a> FormulaRegressionBuilder<'a> {
         let slopes: Vec<_> = parameters.iter().cloned().skip(1).collect();
         ensure!(
             output_names.len() == slopes.len(),
-            Error::new(ErrorKind::InconsitentSlopes(InconsitentSlopes::new(
+            Error::new(ErrorKind::InconsistentSlopes(InconsistentSlopes::new(
                 output_names.len(),
                 slopes.len()
             )))
@@ -590,7 +590,7 @@ impl RegressionModel {
         let output_names: Vec<_> = output_names.into_iter().collect();
         ensure!(
             output_names.len() == slopes.len(),
-            Error::new(ErrorKind::InconsitentSlopes(InconsitentSlopes::new(
+            Error::new(ErrorKind::InconsistentSlopes(InconsistentSlopes::new(
                 output_names.len(),
                 slopes.len(),
             )))

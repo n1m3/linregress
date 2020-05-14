@@ -22,12 +22,12 @@ impl Error {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct InconsitentSlopes {
+pub struct InconsistentSlopes {
     output_name_count: usize,
     slope_count: usize,
 }
 
-impl InconsitentSlopes {
+impl InconsistentSlopes {
     pub(crate) fn new(output_name_count: usize, slope_count: usize) -> Self {
         Self {
             output_name_count,
@@ -47,7 +47,7 @@ impl InconsitentSlopes {
 #[derive(Debug, Clone)]
 pub enum ErrorKind {
     /// Number of slopes and output names is inconsistent.
-    InconsitentSlopes(InconsitentSlopes),
+    InconsistentSlopes(InconsistentSlopes),
     /// Cannot fit model without data.
     NoData,
     /// Cannot fit model without formula.
@@ -74,7 +74,7 @@ pub enum ErrorKind {
 impl error::Error for Error {
     fn description(&self) -> &str {
         match self.kind {
-            ErrorKind::InconsitentSlopes(_) => "Number of slopes and output names is inconsistent",
+            ErrorKind::InconsistentSlopes(_) => "Number of slopes and output names is inconsistent",
             ErrorKind::NoData => "Cannot fit model without data",
             ErrorKind::NoFormula => "Cannot fit model without formula",
             ErrorKind::ColumnNotInData(_) => "Requested column not in data",
@@ -92,11 +92,11 @@ impl error::Error for Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.kind {
-            ErrorKind::InconsitentSlopes(inconsitent_slopes) => write!(
+            ErrorKind::InconsistentSlopes(inconsistent_slopes) => write!(
                 f,
                 "Number of slopes and output names is inconsistent. {} outputs != {} sloped",
-                inconsitent_slopes.get_output_name_count(),
-                inconsitent_slopes.get_slope_count()
+                inconsistent_slopes.get_output_name_count(),
+                inconsistent_slopes.get_slope_count()
             ),
             ErrorKind::NoData => write!(f, "Cannot fit model without data"),
             ErrorKind::NoFormula => write!(f, "Cannot fit model without formula"),
