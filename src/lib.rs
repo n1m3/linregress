@@ -64,7 +64,7 @@
 #![warn(rust_2018_idioms)]
 #![cfg_attr(feature = "unstable", feature(test))]
 use std::borrow::Cow;
-use std::collections::{BTreeSet, HashMap};
+use std::collections::{BTreeSet, HashMap, HashSet};
 use std::iter;
 
 use nalgebra::{DMatrix, DVector, RowDVector};
@@ -350,7 +350,7 @@ impl<'a> RegressionData<'a> {
     }
     fn check_if_all_columns_are_equal(data: &HashMap<Cow<'a, str>, Vec<f64>>) -> bool {
         for column in data.values() {
-            if column.len() < 1 {
+            if column.len() <= 1 {
                 return false;
             }
             let first_iter = iter::repeat(&column[0]).take(column.len());
@@ -545,6 +545,61 @@ pub struct RegressionModel {
     pub scale: f64,
 }
 impl RegressionModel {
+    pub fn predict(&self, data: &RegressionData<'_>) -> Result<Vec<f64>, Error> {
+        self.check_variables(data)?;
+        let input_len = data.data.iter().nth(0).unwrap().1.len();
+        let intercept = self.parameters.intercept_value;
+        let pairs = self.parameters.pairs();
+        let parameters: HashMap<_, _> = pairs.iter().map(|(s, p)| (Cow::from(s), p)).collect();
+        Ok(data
+            .data
+            .iter()
+            .map(|(label, values)| {
+                (
+                    label,
+                    values
+                        .iter()
+                        .map(|x| x * *parameters.get(label).unwrap())
+                        .collect(),
+                )
+            })
+            .fold(vec![intercept; input_len], |v, (_, x): (_, Vec<_>)| {
+                v.iter().zip(x.iter()).map(|(a, b)| a + b).collect()
+            }))
+    }
+
+    fn check_variables(&self, data: &RegressionData<'_>) -> Result<(), Error> {
+        let model_parameters: HashSet<_> = self
+            .parameters
+            .regressor_names
+            .iter()
+            .map(|s| Cow::from(s))
+            .collect();
+        let borrowed_model_parameters = &model_parameters.iter().collect::<HashSet<_>>();
+        let given_parameters: HashSet<_> = data.data.keys().collect();
+        let missing_parameters: HashSet<_> = borrowed_model_parameters
+            .difference(&given_parameters)
+            .collect();
+        ensure!(
+            missing_parameters.is_empty(),
+            Error::new(ErrorKind::RegressionDataError(format!(
+                "Missing input values for these variables: {:?}",
+                missing_parameters
+            )))
+        );
+        let extra_parameters: HashSet<_> = given_parameters
+            .difference(borrowed_model_parameters)
+            .collect();
+        ensure!(
+            extra_parameters.is_empty(),
+            Error::new(ErrorKind::RegressionDataError(format!(
+                "Unknown variables: {:?}",
+                extra_parameters
+            )))
+        );
+        Ok(())
+    }
+
     fn try_from_matrices_and_regressor_names<I: IntoIterator<Item = String>>(
         inputs: RowDVector<f64>,
         outputs: DMatrix<f64>,
@@ -665,11 +720,11 @@ impl RegressionParameters {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn pairs(self) -> Vec<(String, f64)> {
+    pub fn pairs(&self) -> Vec<(String, f64)> {
         self.regressor_names
             .iter()
-            .zip(self.regressor_values)
-            .map(|(x, y)| (x.to_owned(), y))
+            .zip(self.regressor_values.iter())
+            .map(|(x, y)| (x.to_owned(), *y))
             .collect()
     }
 }
@@ -992,6 +1047,60 @@ mod tests {
         let builder = RegressionDataBuilder::new();
         assert!(builder.build_from(data1).is_err());
         assert!(builder.build_from(data2).is_err());
+    }
+    fn build_model() -> RegressionModel {
+        let y = vec![1., 2., 3., 4., 5.];
+        let x1 = vec![5., 4., 3., 2., 1.];
+        let x2 = vec![729.53, 439.0367, 42.054, 1., 0.];
+        let x3 = vec![258.589, 616.297, 215.061, 498.361, 0.];
+        let data = vec![("Y", y), ("X1", x1), ("X2", x2), ("X3", x3)];
+        let data = RegressionDataBuilder::new().build_from(data).unwrap();
+        let formula = "Y ~ X1 + X2 + X3";
+        FormulaRegressionBuilder::new()
+            .data(&data)
+            .formula(formula)
+            .fit()
+            .unwrap()
+    }
+    #[test]
+    fn test_too_many_prediction_variables() {
+        let model = build_model();
+        let new_data = vec![
+            ("X1", vec![1.0]),
+            ("X2", vec![2.0]),
+            ("X3", vec![3.0]),
+            ("X4", vec![4.0]),
+        ];
+        let new_data = RegressionDataBuilder::new().build_from(new_data).unwrap();
+        assert!(model.check_variables(&new_data).is_err());
+    }
+    #[test]
+    fn test_not_enough_prediction_variables() {
+        let model = build_model();
+        let new_data = vec![("X1", vec![1.0]), ("X2", vec![2.0])];
+        let new_data = RegressionDataBuilder::new().build_from(new_data).unwrap();
+        assert!(model.check_variables(&new_data).is_err());
+    }
+    #[test]
+    fn test_prediction() {
+        let model = build_model();
+        let new_data = vec![("X1", vec![2.5]), ("X2", vec![2.0]), ("X3", vec![2.0])];
+        let new_data = RegressionDataBuilder::new().build_from(new_data).unwrap();
+        let prediction = model.predict(&new_data).unwrap();
+        assert!((prediction[0] - 3.5).abs() < 1e7);
+    }
+    #[test]
+    fn test_multiple_predictions() {
+        let model = build_model();
+        let new_data = vec![
+            ("X1", vec![2.5, 3.5]),
+            ("X2", vec![2.0, 8.0]),
+            ("X3", vec![2.0, 1.0]),
+        ];
+        let new_data = RegressionDataBuilder::new().build_from(new_data).unwrap();
+        let prediction = model.predict(&new_data).unwrap();
+        assert!((prediction[0] - 3.5).abs() < 1e7);
+        assert!((prediction[1] - 2.5).abs() < 1e7);
     }
 }
 #[cfg(all(feature = "unstable", test))]
