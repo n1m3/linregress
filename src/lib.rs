@@ -350,7 +350,7 @@ impl<'a> RegressionData<'a> {
     }
     fn check_if_all_columns_are_equal(data: &HashMap<Cow<'a, str>, Vec<f64>>) -> bool {
         for column in data.values() {
-            if column.len() <= 1 {
+            if column.len() < 1 {
                 return false;
             }
             let first_iter = iter::repeat(&column[0]).take(column.len());
@@ -545,14 +545,52 @@ pub struct RegressionModel {
     pub scale: f64,
 }
 impl RegressionModel {
-    pub fn predict(&self, data: &RegressionData<'_>) -> Result<Vec<f64>, Error> {
-        self.check_variables(data)?;
-        let input_len = data.data.iter().nth(0).unwrap().1.len();
+    /// Evaluates the model on a set of input points.
+    ///
+    /// ## Example
+    ///
+    /// ```
+    /// # use linregress::{RegressionDataBuilder, FormulaRegressionBuilder};
+    /// # use linregress::Error;
+    /// # fn main() -> Result<(), Error> {
+    /// # let y = vec![1., 2., 3., 4., 5.];
+    /// # let x1 = vec![5., 4., 3., 2., 1.];
+    /// # let x2 = vec![729.53, 439.0367, 42.054, 1., 0.];
+    /// # let x3 = vec![258.589, 616.297, 215.061, 498.361, 0.];
+    /// # let data = vec![("Y", y), ("X1", x1), ("X2", x2), ("X3", x3)];
+    /// # let data = RegressionDataBuilder::new().build_from(data).unwrap();
+    /// # let formula = "Y ~ X1 + X2 + X3";
+    /// # let model = FormulaRegressionBuilder::new()
+    /// #     .data(&data)
+    /// #     .formula(formula)
+    /// #     .fit()?;
+    /// let new_data = vec![
+    ///     ("X1", vec![2.5, 3.5]),
+    ///     ("X2", vec![2.0, 8.0]),
+    ///     ("X3", vec![2.0, 1.0]),
+    /// ];
+    /// let prediction: Vec<f64> = model.predict(new_data)?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn predict<'a, I, S>(&self, data: I) -> Result<Vec<f64>, Error>
+    where
+        I: IntoIterator<Item = (S, Vec<f64>)>,
+        S: Into<Cow<'a, str>>,
+    {
+        let input_variables: HashMap<_, _> = data
+            .into_iter()
+            .map(|(key, value)| (key.into(), value))
+            .collect();
+        self.check_variables(input_variables.keys().cloned())?;
+        let input_len = input_variables.values().nth(0).unwrap().len();
         let intercept = self.parameters.intercept_value;
         let pairs = self.parameters.pairs();
-        let parameters: HashMap<_, _> = pairs.iter().map(|(s, p)| (Cow::from(s), p)).collect();
-        Ok(data
-            .data
+        let parameters = pairs
+            .iter()
+            .map(|(s, p)| (Cow::from(s), p))
+            .collect::<HashMap<_, _>>();
+        Ok(input_variables
             .iter()
             .map(|(label, values)| {
                 (
@@ -568,18 +606,19 @@ impl RegressionModel {
             }))
     }
 
-    fn check_variables(&self, data: &RegressionData<'_>) -> Result<(), Error> {
+    fn check_variables<'a, I>(&self, data: I) -> Result<(), Error>
+    where
+        I: Iterator<Item = Cow<'a, str>>,
+    {
         let model_parameters: HashSet<_> = self
             .parameters
             .regressor_names
             .iter()
-            .map(|s| Cow::from(s))
+            .map(|name| Cow::from(name))
             .collect();
-        let borrowed_model_parameters = &model_parameters.iter().collect::<HashSet<_>>();
-        let given_parameters: HashSet<_> = data.data.keys().collect();
-        let missing_parameters: HashSet<_> = borrowed_model_parameters
-            .difference(&given_parameters)
-            .collect();
+        let given_parameters: HashSet<_> = data.collect();
+        let missing_parameters: HashSet<_> =
+            model_parameters.difference(&given_parameters).collect();
         ensure!(
             missing_parameters.is_empty(),
             Error::new(ErrorKind::RegressionDataError(format!(
@@ -587,9 +626,7 @@ impl RegressionModel {
                 missing_parameters
             )))
         );
-        let extra_parameters: HashSet<_> = given_parameters
-            .difference(borrowed_model_parameters)
-            .collect();
+        let extra_parameters: HashSet<_> = given_parameters.difference(&model_parameters).collect();
         ensure!(
             extra_parameters.is_empty(),
             Error::new(ErrorKind::RegressionDataError(format!(
@@ -1065,28 +1102,31 @@ mod tests {
     #[test]
     fn test_too_many_prediction_variables() {
         let model = build_model();
-        let new_data = vec![
+        let new_data: HashMap<_, _> = vec![
             ("X1", vec![1.0]),
             ("X2", vec![2.0]),
             ("X3", vec![3.0]),
             ("X4", vec![4.0]),
-        ];
-        let new_data = RegressionDataBuilder::new().build_from(new_data).unwrap();
-        assert!(model.check_variables(&new_data).is_err());
+        ]
+        .into_iter()
+        .map(|(s, v)| (Cow::from(s), v))
+        .collect();
+        assert!(model.check_variables(new_data.keys().cloned()).is_err());
     }
     #[test]
     fn test_not_enough_prediction_variables() {
         let model = build_model();
-        let new_data = vec![("X1", vec![1.0]), ("X2", vec![2.0])];
-        let new_data = RegressionDataBuilder::new().build_from(new_data).unwrap();
-        assert!(model.check_variables(&new_data).is_err());
+        let new_data: HashMap<_, _> = vec![("X1", vec![1.0]), ("X2", vec![2.0])]
+            .into_iter()
+            .map(|(s, v)| (Cow::from(s), v))
+            .collect();
+        assert!(model.check_variables(new_data.keys().cloned()).is_err());
     }
     #[test]
     fn test_prediction() {
         let model = build_model();
         let new_data = vec![("X1", vec![2.5]), ("X2", vec![2.0]), ("X3", vec![2.0])];
-        let new_data = RegressionDataBuilder::new().build_from(new_data).unwrap();
-        let prediction = model.predict(&new_data).unwrap();
+        let prediction = model.predict(new_data).unwrap();
         assert!((prediction[0] - 3.5).abs() < 1e7);
     }
     #[test]
@@ -1097,8 +1137,7 @@ mod tests {
             ("X2", vec![2.0, 8.0]),
             ("X3", vec![2.0, 1.0]),
         ];
-        let new_data = RegressionDataBuilder::new().build_from(new_data).unwrap();
-        let prediction = model.predict(&new_data).unwrap();
+        let prediction = model.predict(new_data).unwrap();
         assert!((prediction[0] - 3.5).abs() < 1e7);
         assert!((prediction[1] - 2.5).abs() < 1e7);
     }
