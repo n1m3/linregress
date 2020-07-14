@@ -547,32 +547,37 @@ pub struct RegressionModel {
 impl RegressionModel {
     /// Evaluates the model on a set of input points.
     ///
+    /// See [`RegressionDataBuilder.build`] for details on the type of the `data` parameter.
+    ///
     /// ## Example
     ///
     /// ```
     /// # use linregress::{RegressionDataBuilder, FormulaRegressionBuilder};
     /// # use linregress::Error;
     /// # fn main() -> Result<(), Error> {
-    /// # let y = vec![1., 2., 3., 4., 5.];
-    /// # let x1 = vec![5., 4., 3., 2., 1.];
-    /// # let x2 = vec![729.53, 439.0367, 42.054, 1., 0.];
-    /// # let x3 = vec![258.589, 616.297, 215.061, 498.361, 0.];
-    /// # let data = vec![("Y", y), ("X1", x1), ("X2", x2), ("X3", x3)];
-    /// # let data = RegressionDataBuilder::new().build_from(data).unwrap();
-    /// # let formula = "Y ~ X1 + X2 + X3";
-    /// # let model = FormulaRegressionBuilder::new()
-    /// #     .data(&data)
-    /// #     .formula(formula)
-    /// #     .fit()?;
+    /// let y = vec![1., 2., 3., 4., 5.];
+    /// let x1 = vec![5., 4., 3., 2., 1.];
+    /// let x2 = vec![729.53, 439.0367, 42.054, 1., 0.];
+    /// let x3 = vec![258.589, 616.297, 215.061, 498.361, 0.];
+    /// let data = vec![("Y", y), ("X1", x1), ("X2", x2), ("X3", x3)];
+    /// let data = RegressionDataBuilder::new().build_from(data).unwrap();
+    /// let formula = "Y ~ X1 + X2 + X3";
+    /// let model = FormulaRegressionBuilder::new()
+    ///     .data(&data)
+    ///     .formula(formula)
+    ///     .fit()?;
     /// let new_data = vec![
     ///     ("X1", vec![2.5, 3.5]),
     ///     ("X2", vec![2.0, 8.0]),
     ///     ("X3", vec![2.0, 1.0]),
     /// ];
     /// let prediction: Vec<f64> = model.predict(new_data)?;
+    /// assert_eq!(prediction, vec![3.5000000000000275, 2.5000000000000533]);
     /// # Ok(())
     /// # }
     /// ```
+    ///
+    /// [`RegressionDataBuilder.build`]: struct.RegressionDataBuilder.html#method.build_from
     pub fn predict<'a, I, S>(&self, data: I) -> Result<Vec<f64>, Error>
     where
         I: IntoIterator<Item = (S, Vec<f64>)>,
