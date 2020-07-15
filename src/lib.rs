@@ -1112,6 +1112,28 @@ mod tests {
             .unwrap()
     }
     #[test]
+    fn test_prediction_empty_vectors() {
+        let model = build_model();
+        let new_data: HashMap<Cow<'_, _>, _> = vec![("X1", vec![]), ("X2", vec![]), ("X3", vec![])]
+            .into_iter()
+            .map(|(x, y)| (Cow::from(x), y))
+            .collect();
+        assert!(model.check_variables(&new_data).is_err());
+    }
+    #[test]
+    fn test_prediction_vectors_with_different_lengths() {
+        let model = build_model();
+        let new_data: HashMap<Cow<'_, _>, _> = vec![
+            ("X1", vec![1.0, 2.0]),
+            ("X2", vec![2.0, 1.0]),
+            ("X3", vec![3.0]),
+        ]
+        .into_iter()
+        .map(|(x, y)| (Cow::from(x), y))
+        .collect();
+        assert!(model.check_variables(&new_data).is_err());
+    }
+    #[test]
     fn test_too_many_prediction_variables() {
         let model = build_model();
         let new_data: HashMap<Cow<'_, _>, _> = vec![
@@ -1149,6 +1171,19 @@ mod tests {
             ("X1", vec![2.5, 3.5]),
             ("X2", vec![2.0, 8.0]),
             ("X3", vec![2.0, 1.0]),
+        ];
+        let prediction = model.predict(new_data).unwrap();
+        assert_eq!(prediction.len(), 2);
+        assert_almost_equal_with_precision(prediction[0], 3.500000000000111, 1.0E-7);
+        assert_almost_equal_with_precision(prediction[1], 2.5000000000001337, 1.0E-7);
+    }
+    #[test]
+    fn test_multiple_predictions_out_of_order() {
+        let model = build_model();
+        let new_data = vec![
+            ("X1", vec![2.5, 3.5]),
+            ("X3", vec![2.0, 1.0]),
+            ("X2", vec![2.0, 8.0]),
         ];
         let prediction = model.predict(new_data).unwrap();
         assert_eq!(prediction.len(), 2);
