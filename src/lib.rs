@@ -545,8 +545,9 @@ pub struct RegressionModel {
     pub scale: f64,
 }
 impl RegressionModel {
-    /// Evaluates the model on a set of input points.
+    /// Evaluates the model on given new input data and returns the predicted values.
     ///
+    /// The new data is expected to have the same columns as the original data.
     /// See [`RegressionDataBuilder.build`] for details on the type of the `new_data` parameter.
     ///
     /// ## Example
