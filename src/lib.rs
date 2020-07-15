@@ -31,25 +31,25 @@
   assert_eq!(
       parameters.pairs(),
       vec![
-          ("X1".to_string(), -0.9999999999999745),
-          ("X2".to_string(), 0.00000000000000005637851296924623),
-          ("X3".to_string(), 0.00000000000000008283304597789254),
+          ("X1", -0.9999999999999745),
+          ("X2", 0.00000000000000005637851296924623),
+          ("X3", 0.00000000000000008283304597789254),
       ]
   );
   assert_eq!(
       standard_errors.pairs(),
       vec![
-          ("X1".to_string(), 0.00000000000019226371555402852),
-          ("X2".to_string(), 0.0000000000000008718958950659518),
-          ("X3".to_string(), 0.0000000000000005323837152041135),
+          ("X1", 0.00000000000019226371555402852),
+          ("X2", 0.0000000000000008718958950659518),
+          ("X3", 0.0000000000000005323837152041135),
       ]
   );
   assert_eq!(
       pvalues.pairs(),
       vec![
-          ("X1".to_string(), 0.00000000000012239888283055414),
-          ("X2".to_string(), 0.9588921357097694),
-          ("X3".to_string(), 0.9017368322742073),
+          ("X1", 0.00000000000012239888283055414),
+          ("X2", 0.9588921357097694),
+          ("X3", 0.9017368322742073),
       ]
   );
   # Ok(())
@@ -64,7 +64,7 @@
 #![warn(rust_2018_idioms)]
 #![cfg_attr(feature = "unstable", feature(test))]
 use std::borrow::Cow;
-use std::collections::{BTreeSet, HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::iter;
 
 use nalgebra::{DMatrix, DVector, RowDVector};
@@ -583,18 +583,23 @@ impl RegressionModel {
         I: IntoIterator<Item = (S, Vec<f64>)>,
         S: Into<Cow<'a, str>>,
     {
-        let input_variables: HashMap<_, _> = data
+        let input_variables: BTreeMap<String, _> = data
             .into_iter()
-            .map(|(key, value)| (key.into(), value))
+            .map(|(key, value)| {
+                let key: Cow<'a, _> = key.into();
+                (key.to_string(), value)
+            })
             .collect();
-        self.check_variables(input_variables.keys().cloned())?;
+        self.check_variables(&input_variables)?;
         let input_len = input_variables.values().nth(0).unwrap().len();
         let intercept = self.parameters.intercept_value;
-        let pairs = self.parameters.pairs();
-        let parameters = pairs
+        let parameters: HashMap<_, _> = self
+            .parameters
+            .regressor_names
             .iter()
-            .map(|(s, p)| (Cow::from(s), p))
-            .collect::<HashMap<_, _>>();
+            .zip(self.parameters.regressor_values.iter())
+            .map(|(x, y)| (x, *y))
+            .collect();
         Ok(input_variables
             .iter()
             .map(|(label, values)| {
@@ -611,17 +616,14 @@ impl RegressionModel {
             }))
     }
 
-    fn check_variables<'a, I>(&self, data: I) -> Result<(), Error>
-    where
-        I: Iterator<Item = Cow<'a, str>>,
-    {
+    fn check_variables(&self, data: &BTreeMap<String, Vec<f64>>) -> Result<(), Error> {
         let model_parameters: HashSet<_> = self
             .parameters
             .regressor_names
             .iter()
-            .map(|name| Cow::from(name))
+            .map(|name| name.as_str())
             .collect();
-        let given_parameters: HashSet<_> = data.collect();
+        let given_parameters: HashSet<_> = data.keys().map(|name| name.as_str()).collect();
         let missing_parameters: HashSet<_> =
             model_parameters.difference(&given_parameters).collect();
         ensure!(
@@ -741,7 +743,7 @@ pub struct RegressionParameters {
     pub regressor_values: Vec<f64>,
 }
 impl RegressionParameters {
-    /// Returns the parameters as a Vec of tuples of the form `(name: String, value: f64)`.
+    /// Returns the parameters as a Vec of tuples of the form `(name: &str, value: f64)`.
     ///
     /// # Usage
     ///
@@ -757,16 +759,16 @@ impl RegressionParameters {
     /// let data = RegressionDataBuilder::new().build_from(data)?;
     /// let model = FormulaRegressionBuilder::new().data(&data).formula("Y ~ X1 + X2").fit()?;
     /// let pairs = model.parameters.pairs();
-    /// assert_eq!(pairs[0], ("X1".to_string(), -0.0370370370370372));
-    /// assert_eq!(pairs[1], ("X2".to_string(), 0.9629629629629629));
+    /// assert_eq!(pairs[0], ("X1", -0.0370370370370372));
+    /// assert_eq!(pairs[1], ("X2", 0.9629629629629629));
     /// # Ok(())
     /// # }
     /// ```
-    pub fn pairs(&self) -> Vec<(String, f64)> {
+    pub fn pairs(&self) -> Vec<(&str, f64)> {
         self.regressor_names
             .iter()
             .zip(self.regressor_values.iter())
-            .map(|(x, y)| (x.to_owned(), *y))
+            .map(|(x, y)| (x.as_str(), *y))
             .collect()
     }
 }
@@ -878,7 +880,10 @@ fn get_sum_of_products(matrix: &DMatrix<f64>, vector: &RowDVector<f64>) -> DMatr
 mod tests {
     use super::*;
     fn assert_almost_equal(a: f64, b: f64) {
-        if (a - b).abs() > 1.0E-14 {
+        assert_almost_equal_with_precision(a, b, 1.0E-14);
+    }
+    fn assert_almost_equal_with_precision(a: f64, b: f64, precision: f64) {
+        if (a - b).abs() > precision {
             panic!("\n{:?} vs\n{:?}", a, b);
         }
     }
@@ -1107,32 +1112,33 @@ mod tests {
     #[test]
     fn test_too_many_prediction_variables() {
         let model = build_model();
-        let new_data: HashMap<_, _> = vec![
+        let new_data: BTreeMap<String, _> = vec![
             ("X1", vec![1.0]),
             ("X2", vec![2.0]),
             ("X3", vec![3.0]),
             ("X4", vec![4.0]),
         ]
         .into_iter()
-        .map(|(s, v)| (Cow::from(s), v))
+        .map(|(s, v)| (s.into(), v))
         .collect();
-        assert!(model.check_variables(new_data.keys().cloned()).is_err());
+        assert!(model.check_variables(&new_data).is_err());
     }
     #[test]
     fn test_not_enough_prediction_variables() {
         let model = build_model();
-        let new_data: HashMap<_, _> = vec![("X1", vec![1.0]), ("X2", vec![2.0])]
+        let new_data: BTreeMap<String, _> = vec![("X1", vec![1.0]), ("X2", vec![2.0])]
             .into_iter()
-            .map(|(s, v)| (Cow::from(s), v))
+            .map(|(s, v)| (s.into(), v))
             .collect();
-        assert!(model.check_variables(new_data.keys().cloned()).is_err());
+        assert!(model.check_variables(&new_data).is_err());
     }
     #[test]
     fn test_prediction() {
         let model = build_model();
         let new_data = vec![("X1", vec![2.5]), ("X2", vec![2.0]), ("X3", vec![2.0])];
         let prediction = model.predict(new_data).unwrap();
-        assert!((prediction[0] - 3.5).abs() < 1e7);
+        assert_eq!(prediction.len(), 1);
+        assert_almost_equal_with_precision(prediction[0], 3.500000000000111, 1.0E-7);
     }
     #[test]
     fn test_multiple_predictions() {
@@ -1143,8 +1149,9 @@ mod tests {
             ("X3", vec![2.0, 1.0]),
         ];
         let prediction = model.predict(new_data).unwrap();
-        assert!((prediction[0] - 3.5).abs() < 1e7);
-        assert!((prediction[1] - 2.5).abs() < 1e7);
+        assert_eq!(prediction.len(), 2);
+        assert_almost_equal_with_precision(prediction[0], 3.500000000000111, 1.0E-7);
+        assert_almost_equal_with_precision(prediction[1], 2.5000000000001337, 1.0E-7);
     }
 }
 #[cfg(all(feature = "unstable", test))]
