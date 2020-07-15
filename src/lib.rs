@@ -587,8 +587,8 @@ impl RegressionModel {
             .into_iter()
             .map(|(key, value)| (key.into(), value))
             .collect();
-        let input_len = new_data.values().nth(0).unwrap().len();
         self.check_variables(&new_data)?;
+        let input_len = new_data.values().nth(0).unwrap().len();
         let mut new_data_values: Vec<f64> = vec![];
         for key in &self.parameters.regressor_names {
             new_data_values.extend_from_slice(new_data[&Cow::from(key)].as_slice());
@@ -615,34 +615,31 @@ impl RegressionModel {
         &self,
         given_parameters: &HashMap<Cow<'a, str>, Vec<f64>>,
     ) -> Result<(), Error> {
+        ensure!(!given_parameters.is_empty(), Error::new(ErrorKind::NoData));
+        let first_len = given_parameters.values().nth(0).unwrap().len();
+        ensure!(first_len > 0, Error::new(ErrorKind::NoData));
         let model_parameters: HashSet<_> = self
             .parameters
             .regressor_names
             .iter()
             .map(|name| Cow::from(name))
             .collect();
-        let missing_parameters: HashSet<_> = model_parameters
-            .iter()
-            .filter(|i| !given_parameters.contains_key(*i))
-            .collect();
-        let extra_parameters: HashSet<_> = given_parameters
-            .keys()
-            .filter(|i| !model_parameters.contains(*i))
-            .collect();
-        ensure!(
-            missing_parameters.is_empty(),
-            Error::new(ErrorKind::RegressionDataError(format!(
-                "Missing input values for these variables: {:?}",
-                missing_parameters
-            )))
-        );
-        ensure!(
-            extra_parameters.is_empty(),
-            Error::new(ErrorKind::RegressionDataError(format!(
-                "Unknown variables: {:?}",
-                extra_parameters
-            )))
-        );
+        for param in &model_parameters {
+            if !given_parameters.contains_key(param) {
+                return Err(Error::new(ErrorKind::ColumnNotInData(param.to_string())));
+            }
+        }
+        for (param, values) in given_parameters {
+            ensure!(
+                values.len() == first_len,
+                Error::new(ErrorKind::InconsistentVectors)
+            );
+            if !model_parameters.contains(param) {
+                return Err(Error::new(ErrorKind::ModelColumnNotInData(
+                    param.to_string(),
+                )));
+            }
+        }
         Ok(())
     }
 

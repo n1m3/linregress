@@ -56,12 +56,16 @@ pub enum ErrorKind {
     InvalidFormula,
     /// Requested column is not in data. (Column given as String)
     ColumnNotInData(String),
+    /// A column used in the model is misising from the provided data
+    ModelColumnNotInData(String),
     /// Regressor and regressand dimensions do not match. (Column given as String)
     RegressorRegressandDimensionMismatch(String),
     /// Error while processing the regression data. (Details given as String)
     RegressionDataError(String),
     /// Error while fitting the model. (Details given as String)
     ModelFittingError(String),
+    /// The given vectors have inconsistent lengths
+    InconsistentVectors,
 
     /// Hint that users should not exhaustively mathch on this enum
     ///
@@ -84,6 +88,8 @@ impl error::Error for Error {
             }
             ErrorKind::RegressionDataError(_) => "Error while processing the regression data",
             ErrorKind::ModelFittingError(_) => "Error while fitting the model",
+            ErrorKind::ModelColumnNotInData(_) => "Column used in the model is misising from data",
+            ErrorKind::InconsistentVectors => "Given vectors have inconsistent lengths",
             ErrorKind::__Nonexhaustive => unreachable!(),
         }
     }
@@ -117,6 +123,14 @@ impl fmt::Display for Error {
             }
             ErrorKind::ModelFittingError(detail) => {
                 write!(f, "Error while fitting the model: {}", detail)
+            }
+            ErrorKind::ModelColumnNotInData(column) => write!(
+                f,
+                "The column {} used in the model is misising from the provided data",
+                column
+            ),
+            ErrorKind::InconsistentVectors => {
+                write!(f, "The given vectors have inconsistent lengths")
             }
             ErrorKind::__Nonexhaustive => unreachable!(),
         }
