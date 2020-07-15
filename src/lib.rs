@@ -64,7 +64,7 @@
 #![warn(rust_2018_idioms)]
 #![cfg_attr(feature = "unstable", feature(test))]
 use std::borrow::Cow;
-use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
 use std::iter;
 
 use nalgebra::{DMatrix, DVector, RowDVector};
@@ -547,7 +547,7 @@ pub struct RegressionModel {
 impl RegressionModel {
     /// Evaluates the model on a set of input points.
     ///
-    /// See [`RegressionDataBuilder.build`] for details on the type of the `data` parameter.
+    /// See [`RegressionDataBuilder.build`] for details on the type of the `new_data` parameter.
     ///
     /// ## Example
     ///
@@ -578,35 +578,31 @@ impl RegressionModel {
     /// ```
     ///
     /// [`RegressionDataBuilder.build`]: struct.RegressionDataBuilder.html#method.build_from
-    pub fn predict<'a, I, S>(&self, data: I) -> Result<Vec<f64>, Error>
+    pub fn predict<'a, I, S>(&self, new_data: I) -> Result<Vec<f64>, Error>
     where
         I: IntoIterator<Item = (S, Vec<f64>)>,
         S: Into<Cow<'a, str>>,
     {
-        let input_variables: BTreeMap<String, _> = data
+        let new_data: HashMap<Cow<'_, _>, Vec<f64>> = new_data
             .into_iter()
-            .map(|(key, value)| {
-                let key: Cow<'a, _> = key.into();
-                (key.to_string(), value)
-            })
+            .map(|(key, value)| (key.into(), value))
             .collect();
-        self.check_variables(&input_variables)?;
-        let input_len = input_variables.values().nth(0).unwrap().len();
-        let mut new_data_matrix: Vec<f64> = vec![];
-        for output in input_variables.keys() {
-            let o_vec = input_variables
-                .get(output)
-                .ok_or_else(|| Error::new(ErrorKind::ColumnNotInData(output.into())))?;
-            new_data_matrix.extend(o_vec.iter());
+        let input_len = new_data.values().nth(0).unwrap().len();
+        self.check_variables(&new_data)?;
+        let mut new_data_values: Vec<f64> = vec![];
+        for key in &self.parameters.regressor_names {
+            new_data_values.extend_from_slice(new_data[&Cow::from(key)].as_slice());
         }
         let new_data_matrix = DMatrix::from_vec(
             input_len,
             self.parameters.regressor_values.len(),
-            new_data_matrix,
+            new_data_values,
         );
-        let param_matrix: Vec<f64> = self.parameters.regressor_values.clone();
-        let param_matrix =
-            DMatrix::from_vec(self.parameters.regressor_values.len(), 1, param_matrix);
+        let param_matrix = DMatrix::from_iterator(
+            self.parameters.regressor_values.len(),
+            1,
+            self.parameters.regressor_values.iter().copied(),
+        );
         let intercept = self.parameters.intercept_value;
         let intercept_matrix =
             DMatrix::from_iterator(input_len, 1, std::iter::repeat(intercept).take(input_len));
@@ -615,16 +611,24 @@ impl RegressionModel {
         Ok(predictions)
     }
 
-    fn check_variables(&self, data: &BTreeMap<String, Vec<f64>>) -> Result<(), Error> {
+    fn check_variables<'a>(
+        &self,
+        given_parameters: &HashMap<Cow<'a, str>, Vec<f64>>,
+    ) -> Result<(), Error> {
         let model_parameters: HashSet<_> = self
             .parameters
             .regressor_names
             .iter()
-            .map(|name| name.as_str())
+            .map(|name| Cow::from(name))
             .collect();
-        let given_parameters: HashSet<_> = data.keys().map(|name| name.as_str()).collect();
-        let missing_parameters: HashSet<_> =
-            model_parameters.difference(&given_parameters).collect();
+        let missing_parameters: HashSet<_> = model_parameters
+            .iter()
+            .filter(|i| !given_parameters.contains_key(*i))
+            .collect();
+        let extra_parameters: HashSet<_> = given_parameters
+            .keys()
+            .filter(|i| !model_parameters.contains(*i))
+            .collect();
         ensure!(
             missing_parameters.is_empty(),
             Error::new(ErrorKind::RegressionDataError(format!(
@@ -632,7 +636,6 @@ impl RegressionModel {
                 missing_parameters
             )))
         );
-        let extra_parameters: HashSet<_> = given_parameters.difference(&model_parameters).collect();
         ensure!(
             extra_parameters.is_empty(),
             Error::new(ErrorKind::RegressionDataError(format!(
@@ -1111,23 +1114,23 @@ mod tests {
     #[test]
     fn test_too_many_prediction_variables() {
         let model = build_model();
-        let new_data: BTreeMap<String, _> = vec![
+        let new_data: HashMap<Cow<'_, _>, _> = vec![
             ("X1", vec![1.0]),
             ("X2", vec![2.0]),
             ("X3", vec![3.0]),
             ("X4", vec![4.0]),
         ]
         .into_iter()
-        .map(|(s, v)| (s.into(), v))
+        .map(|(x, y)| (Cow::from(x), y))
         .collect();
         assert!(model.check_variables(&new_data).is_err());
     }
     #[test]
     fn test_not_enough_prediction_variables() {
         let model = build_model();
-        let new_data: BTreeMap<String, _> = vec![("X1", vec![1.0]), ("X2", vec![2.0])]
+        let new_data: HashMap<Cow<'_, _>, _> = vec![("X1", vec![1.0]), ("X2", vec![2.0])]
             .into_iter()
-            .map(|(s, v)| (s.into(), v))
+            .map(|(x, y)| (Cow::from(x), y))
             .collect();
         assert!(model.check_variables(&new_data).is_err());
     }
