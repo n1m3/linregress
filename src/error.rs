@@ -66,7 +66,8 @@ pub enum ErrorKind {
     ModelFittingError(String),
     /// The given vectors have inconsistent lengths
     InconsistentVectors,
-
+    /// The RegressionModel internal state is inconsistent
+    InconsistentRegressionModel,
     /// Hint that users should not exhaustively mathch on this enum
     ///
     /// This enum may gain additional variants, so we prevent exhaustive matching.
@@ -90,6 +91,7 @@ impl error::Error for Error {
             ErrorKind::ModelFittingError(_) => "Error while fitting the model",
             ErrorKind::ModelColumnNotInData(_) => "Column used in the model is misising from data",
             ErrorKind::InconsistentVectors => "Given vectors have inconsistent lengths",
+            ErrorKind::InconsistentRegressionModel => "Inconsistent RegressionModel internal state",
             ErrorKind::__Nonexhaustive => unreachable!(),
         }
     }
@@ -132,6 +134,13 @@ impl fmt::Display for Error {
             ErrorKind::InconsistentVectors => {
                 write!(f, "The given vectors have inconsistent lengths")
             }
+            ErrorKind::InconsistentRegressionModel => write!(
+                f,
+                concat!(
+                    "The RegressionModel internal state is inconsistent:",
+                    " The number of regressor names and values differ."
+                )
+            ),
             ErrorKind::__Nonexhaustive => unreachable!(),
         }
     }

@@ -624,6 +624,10 @@ impl RegressionModel {
         ensure!(!given_parameters.is_empty(), Error::new(ErrorKind::NoData));
         let first_len = given_parameters.values().nth(0).unwrap().len();
         ensure!(first_len > 0, Error::new(ErrorKind::NoData));
+        ensure!(
+            self.parameters.regressor_names.len() == self.parameters.regressor_values.len(),
+            Error::new(ErrorKind::InconsistentRegressionModel)
+        );
         let model_parameters: HashSet<_> = self
             .parameters
             .regressor_names
@@ -1157,6 +1161,17 @@ mod tests {
             .into_iter()
             .map(|(x, y)| (Cow::from(x), y))
             .collect();
+        assert!(model.check_variables(&new_data).is_err());
+    }
+    #[test]
+    fn test_prediction_broken_model() {
+        let mut model = build_model();
+        model.parameters.regressor_values = vec![];
+        let new_data: HashMap<Cow<'_, _>, _> =
+            vec![("X1", vec![1.0]), ("X2", vec![2.0]), ("X3", vec![3.0])]
+                .into_iter()
+                .map(|(x, y)| (Cow::from(x), y))
+                .collect();
         assert!(model.check_variables(&new_data).is_err());
     }
     #[test]
