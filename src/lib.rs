@@ -592,28 +592,27 @@ impl RegressionModel {
             .collect();
         self.check_variables(&input_variables)?;
         let input_len = input_variables.values().nth(0).unwrap().len();
+        let mut new_data_matrix: Vec<f64> = vec![];
+        for output in input_variables.keys() {
+            let o_vec = input_variables
+                .get(output)
+                .ok_or_else(|| Error::new(ErrorKind::ColumnNotInData(output.into())))?;
+            new_data_matrix.extend(o_vec.iter());
+        }
+        let new_data_matrix = DMatrix::from_vec(
+            input_len,
+            self.parameters.regressor_values.len(),
+            new_data_matrix,
+        );
+        let param_matrix: Vec<f64> = self.parameters.regressor_values.clone();
+        let param_matrix =
+            DMatrix::from_vec(self.parameters.regressor_values.len(), 1, param_matrix);
         let intercept = self.parameters.intercept_value;
-        let parameters: HashMap<_, _> = self
-            .parameters
-            .regressor_names
-            .iter()
-            .zip(self.parameters.regressor_values.iter())
-            .map(|(x, y)| (x, *y))
-            .collect();
-        Ok(input_variables
-            .iter()
-            .map(|(label, values)| {
-                (
-                    label,
-                    values
-                        .iter()
-                        .map(|x| x * *parameters.get(label).unwrap())
-                        .collect(),
-                )
-            })
-            .fold(vec![intercept; input_len], |v, (_, x): (_, Vec<_>)| {
-                v.iter().zip(x.iter()).map(|(a, b)| a + b).collect()
-            }))
+        let intercept_matrix =
+            DMatrix::from_iterator(input_len, 1, std::iter::repeat(intercept).take(input_len));
+        let predictions = (new_data_matrix * param_matrix) + intercept_matrix;
+        let predictions: Vec<f64> = predictions.into_iter().copied().collect();
+        Ok(predictions)
     }
 
     fn check_variables(&self, data: &BTreeMap<String, Vec<f64>>) -> Result<(), Error> {
