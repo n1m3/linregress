@@ -550,6 +550,11 @@ impl RegressionModel {
     /// The new data is expected to have the same columns as the original data.
     /// See [`RegressionDataBuilder.build`] for details on the type of the `new_data` parameter.
     ///
+    /// ## Note
+    ///
+    /// This function does *no* special handling of non real values (NaN or infinity or negative infinity).
+    /// Such a value in `new_data` will result in a corresponding meaningless prediction.
+    ///
     /// ## Example
     ///
     /// ```
