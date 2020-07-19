@@ -682,9 +682,9 @@ impl RegressionModel {
         let centered_tss = &centered_input_matrix.dot(&centered_input_matrix);
         let rsquared = 1. - (ssr / centered_tss);
         let rsquared_adj = 1. - ((n - 1) as f64 / df_resid as f64 * (1. - rsquared));
-        let tvalues: Vec<_> = matrix_as_vec(&parameters)
+        let tvalues: Vec<_> = parameters
             .iter()
-            .zip(matrix_as_vec(&se))
+            .zip(se.iter())
             .map(|(x, y)| x / y)
             .collect();
         let pvalues: Vec<_> = tvalues
@@ -838,27 +838,14 @@ fn fit_ols_pinv(
         normalized_cov_params,
     })
 }
-/// Transforms a matrix into a flat Vec.
-fn matrix_as_vec(matrix: &DMatrix<f64>) -> Vec<f64> {
-    let mut vector = Vec::new();
-    for row_index in 0..matrix.nrows() {
-        let row = matrix.row(row_index);
-        for i in row.iter() {
-            vector.push(*i);
-        }
-    }
-    vector
-}
+
 /// Subtracts `value` from all fields in `matrix` and returns the resulting new matrix.
 fn subtract_value_from_matrix(matrix: &DMatrix<f64>, value: f64) -> DMatrix<f64> {
-    let mut v = Vec::new();
-    for row_index in 0..matrix.nrows() {
-        let row = matrix.row(row_index);
-        for i in row.iter().map(|i| i - value) {
-            v.push(i);
-        }
-    }
-    DMatrix::from_vec(matrix.nrows(), matrix.ncols(), v)
+    let nrows = matrix.nrows();
+    let ncols = matrix.ncols();
+    let substraction_matrix: DMatrix<f64> =
+        DMatrix::from_iterator(nrows, ncols, std::iter::repeat(value).take(nrows * ncols));
+    matrix - substraction_matrix
 }
 /// Calculates the standard errors given a model's covariate parameters
 fn get_se_from_cov_params(matrix: &DMatrix<f64>) -> Result<DMatrix<f64>, Error> {
