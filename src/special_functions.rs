@@ -68,6 +68,7 @@ pub fn stdtr(k: i64, t: f64) -> f64 {
         p
     }
 }
+
 /// Returns incomplete beta integral of the arguments, evaluated
 /// from zero to x.
 pub fn inc_beta(a: f64, b: f64, x: f64) -> f64 {
@@ -137,6 +138,7 @@ pub fn inc_beta(a: f64, b: f64, x: f64) -> f64 {
     }
     t
 }
+
 /// Power series for incomplete beta integral.
 fn pseries(a: f64, b: f64, x: f64) -> f64 {
     assert!(a > 0. && b > 0. && x > 0. && x < 1.);
@@ -171,6 +173,7 @@ fn pseries(a: f64, b: f64, x: f64) -> f64 {
     }
     s
 }
+
 /// Helper function for inc_beta
 fn inc_bcf(a: f64, b: f64, x: f64) -> f64 {
     let mut k1 = a;
@@ -239,6 +242,7 @@ fn inc_bcf(a: f64, b: f64, x: f64) -> f64 {
     }
     answer
 }
+
 /// Helper function for inc_beta
 fn inc_bd(a: f64, b: f64, x: f64) -> f64 {
     let mut k1 = a;
@@ -308,17 +312,20 @@ fn inc_bd(a: f64, b: f64, x: f64) -> f64 {
     }
     answer
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use quickcheck::TestResult;
     use quickcheck_macros::quickcheck;
     use stdtr;
+
     fn assert_almost_equal(a: f64, b: f64) {
         if (a - b).abs() > 1.0E-14 {
             panic!("{:?} vs {:?}", a, b);
         }
     }
+
     #[test]
     fn test_inc_beta() {
         assert_eq!(inc_beta(1.0, 2.0, 0.0), 0.0);
@@ -334,6 +341,7 @@ mod tests {
 
         assert_almost_equal(inc_beta(2.0, 3.0, 0.5), 0.6875);
     }
+
     #[quickcheck]
     fn qc_inc_beta(a: f64, b: f64, x: f64) -> TestResult {
         if !(a > 0. && b > 0.) {
@@ -344,6 +352,7 @@ mod tests {
         let passed = (inc_beta(a, b, x) - stdtr::unchecked_inc_beta(a, b, x)).abs() < 1.0E-12;
         TestResult::from_bool(passed)
     }
+
     #[quickcheck]
     fn qc_stdtr(k: i32, t: f64) -> TestResult {
         if k <= 0 {

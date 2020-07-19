@@ -118,11 +118,13 @@ pub struct FormulaRegressionBuilder<'a> {
     data: Option<&'a RegressionData<'a>>,
     formula: Option<Cow<'a, str>>,
 }
+
 impl<'a> Default for FormulaRegressionBuilder<'a> {
     fn default() -> Self {
         FormulaRegressionBuilder::new()
     }
 }
+
 impl<'a> FormulaRegressionBuilder<'a> {
     /// Create as new FormulaRegressionBuilder with no data or formula set.
     pub fn new() -> Self {
@@ -131,6 +133,7 @@ impl<'a> FormulaRegressionBuilder<'a> {
             formula: None,
         }
     }
+
     /// Set the data to be used for the regression.
     ///
     /// The data has to be given as a reference to a [`RegressionData`] struct.
@@ -142,6 +145,7 @@ impl<'a> FormulaRegressionBuilder<'a> {
         self.data = Some(data);
         self
     }
+
     /// Set the formula to use for the regression.
     ///
     /// The expected format is `<regressand> ~ <regressor 1> + <regressor 2>`.
@@ -156,6 +160,7 @@ impl<'a> FormulaRegressionBuilder<'a> {
         self.formula = Some(formula.into());
         self
     }
+
     /// Fits the model and returns a [`RegressionModel`] if successful.
     /// You need to set the data with [`data`] and a formula with [`formula`]
     /// before you can use it.
@@ -168,6 +173,7 @@ impl<'a> FormulaRegressionBuilder<'a> {
             Self::get_matrices_and_regressor_names(self)?;
         RegressionModel::try_from_matrices_and_regressor_names(input_vector, output_matrix, outputs)
     }
+
     /// Like [`fit`] but does not perfom any statistics on the resulting model.
     /// Returns a [`RegressionParameters`] struct containing the model parameters
     /// if successfull.
@@ -198,6 +204,7 @@ impl<'a> FormulaRegressionBuilder<'a> {
             regressor_names: output_names.to_vec(),
         })
     }
+
     fn get_matrices_and_regressor_names(self) -> Result<FittingData, Error> {
         let data: Result<_, Error> = self.data.ok_or_else(|| Error::new(ErrorKind::NoData));
         let formula: Result<_, Error> =
@@ -348,6 +355,7 @@ impl<'a> RegressionData<'a> {
             }
         }
     }
+
     fn check_if_all_columns_are_equal(data: &HashMap<Cow<'a, str>, Vec<f64>>) -> bool {
         for column in data.values() {
             if column.len() < 1 {
@@ -360,6 +368,7 @@ impl<'a> RegressionData<'a> {
         }
         true
     }
+
     fn check_if_data_is_valid(data: &HashMap<Cow<'a, str>, Vec<f64>>) -> bool {
         for column in data.values() {
             if column.iter().any(|x| !x.is_finite()) {
@@ -368,6 +377,7 @@ impl<'a> RegressionData<'a> {
         }
         true
     }
+
     fn drop_invalid_values(
         data: HashMap<Cow<'a, str>, Vec<f64>>,
     ) -> HashMap<Cow<'a, str>, Vec<f64>> {
@@ -413,6 +423,7 @@ impl RegressionDataBuilder {
     pub fn new() -> Self {
         Self::default()
     }
+
     /// Configure how to handle non real `f64` values (NaN or infinity or negative infinity) using
     /// a variant of the [`InvalidValueHandling`] enum.
     ///
@@ -436,6 +447,7 @@ impl RegressionDataBuilder {
         self.handle_invalid_values = setting;
         self
     }
+
     /// Build a [`RegressionData`] struct from the given data.
     ///
     /// Any type that implements the [`IntoIterator`] trait can be used for the data.
@@ -544,6 +556,7 @@ pub struct RegressionModel {
     ///  called the standard error of the regression.
     pub scale: f64,
 }
+
 impl RegressionModel {
     /// Evaluates the model on given new input data and returns the predicted values.
     ///
@@ -737,6 +750,7 @@ impl RegressionModel {
         })
     }
 }
+
 /// A parameter of a fitted [`RegressionModel`] given for the intercept and each regressor.
 ///
 /// The values and names of the regressors are given in the same order.
@@ -751,6 +765,7 @@ pub struct RegressionParameters {
     pub regressor_names: Vec<String>,
     pub regressor_values: Vec<f64>,
 }
+
 impl RegressionParameters {
     /// Returns the parameters as a Vec of tuples of the form `(name: &str, value: f64)`.
     ///
@@ -847,6 +862,7 @@ fn subtract_value_from_matrix(matrix: &DMatrix<f64>, value: f64) -> DMatrix<f64>
         DMatrix::from_iterator(nrows, ncols, std::iter::repeat(value).take(nrows * ncols));
     matrix - substraction_matrix
 }
+
 /// Calculates the standard errors given a model's covariate parameters
 fn get_se_from_cov_params(matrix: &DMatrix<f64>) -> Result<DMatrix<f64>, Error> {
     let mut v = Vec::new();
@@ -860,6 +876,7 @@ fn get_se_from_cov_params(matrix: &DMatrix<f64>) -> Result<DMatrix<f64>, Error> 
     }
     Ok(DMatrix::from_vec(matrix.ncols(), 1, v))
 }
+
 fn get_sum_of_products(matrix: &DMatrix<f64>, vector: &RowDVector<f64>) -> DMatrix<f64> {
     let mut v: Vec<f64> = Vec::new();
     for row_index in 0..matrix.nrows() {
@@ -872,23 +889,27 @@ fn get_sum_of_products(matrix: &DMatrix<f64>, vector: &RowDVector<f64>) -> DMatr
     }
     DMatrix::from_vec(matrix.nrows(), 1, v)
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;
     fn assert_almost_equal(a: f64, b: f64) {
         assert_almost_equal_with_precision(a, b, 1.0E-14);
     }
+
     fn assert_almost_equal_with_precision(a: f64, b: f64, precision: f64) {
         if (a - b).abs() > precision {
             panic!("\n{:?} vs\n{:?}", a, b);
         }
     }
+
     fn assert_slices_almost_equal(a: &[f64], b: &[f64]) {
         assert_eq!(a.len(), b.len());
         for (x, y) in a.iter().cloned().zip(b.iter().cloned()).collect::<Vec<_>>() {
             assert_almost_equal(x, y);
         }
     }
+
     #[test]
     fn test_pinv_with_formula_builder() {
         use std::collections::HashMap;
@@ -950,6 +971,7 @@ mod tests {
         assert_slices_almost_equal(&regression.residuals.regressor_values, &residuals[1..]);
         assert_eq!(regression.scale, scale);
     }
+
     #[test]
     fn test_without_statistics() {
         use std::collections::HashMap;
@@ -971,6 +993,7 @@ mod tests {
         assert_almost_equal(regression.regressor_values[0], model_parameters[1]);
         assert_almost_equal(regression.regressor_values[1], model_parameters[2]);
     }
+
     #[test]
     fn test_invalid_input_empty_matrix() {
         let y = vec![];
@@ -980,6 +1003,7 @@ mod tests {
         let data = RegressionDataBuilder::new().build_from(data);
         assert!(data.is_err());
     }
+
     #[test]
     fn test_invalid_input_wrong_shape_x() {
         let y = vec![1., 2., 3.];
@@ -989,6 +1013,7 @@ mod tests {
         let data = RegressionDataBuilder::new().build_from(data);
         assert!(data.is_err());
     }
+
     #[test]
     fn test_invalid_input_wrong_shape_y() {
         let y = vec![1., 2., 3., 4.];
@@ -998,6 +1023,7 @@ mod tests {
         let data = RegressionDataBuilder::new().build_from(data);
         assert!(data.is_err());
     }
+
     #[test]
     fn test_invalid_input_nan() {
         let y1 = vec![1., 2., 3., 4.];
@@ -1017,6 +1043,7 @@ mod tests {
         assert!(r_data1.is_ok());
         assert!(r_data2.is_ok());
     }
+
     #[test]
     fn test_invalid_input_infinity() {
         let y1 = vec![1., 2., 3., 4.];
@@ -1036,6 +1063,7 @@ mod tests {
         assert!(r_data1.is_ok());
         assert!(r_data2.is_ok());
     }
+
     #[test]
     fn test_invalid_input_all_equal_columns() {
         let y = vec![38.0, 38.0, 38.0];
@@ -1044,6 +1072,7 @@ mod tests {
         let data = RegressionDataBuilder::new().build_from(data);
         assert!(data.is_err());
     }
+
     #[test]
     fn test_drop_invalid_values() {
         let mut data: HashMap<Cow<'_, str>, Vec<f64>> = HashMap::new();
@@ -1072,6 +1101,7 @@ mod tests {
             RegressionData::drop_invalid_values(data.to_owned())
         );
     }
+
     #[test]
     fn test_all_invalid_input() {
         let data = vec![
@@ -1083,6 +1113,7 @@ mod tests {
         let r_data = builder.build_from(data);
         assert!(r_data.is_err());
     }
+
     #[test]
     fn test_invalid_column_names() {
         let data1 = vec![("x~f", vec![1., 2., 3.]), ("foo", vec![0., 0., 0.])];
@@ -1091,6 +1122,7 @@ mod tests {
         assert!(builder.build_from(data1).is_err());
         assert!(builder.build_from(data2).is_err());
     }
+
     fn build_model() -> RegressionModel {
         let y = vec![1., 2., 3., 4., 5.];
         let x1 = vec![5., 4., 3., 2., 1.];
@@ -1105,6 +1137,7 @@ mod tests {
             .fit()
             .unwrap()
     }
+
     #[test]
     fn test_prediction_empty_vectors() {
         let model = build_model();
@@ -1114,6 +1147,7 @@ mod tests {
             .collect();
         assert!(model.check_variables(&new_data).is_err());
     }
+
     #[test]
     fn test_prediction_vectors_with_different_lengths() {
         let model = build_model();
@@ -1127,6 +1161,7 @@ mod tests {
         .collect();
         assert!(model.check_variables(&new_data).is_err());
     }
+
     #[test]
     fn test_too_many_prediction_variables() {
         let model = build_model();
@@ -1141,6 +1176,7 @@ mod tests {
         .collect();
         assert!(model.check_variables(&new_data).is_err());
     }
+
     #[test]
     fn test_not_enough_prediction_variables() {
         let model = build_model();
@@ -1150,6 +1186,7 @@ mod tests {
             .collect();
         assert!(model.check_variables(&new_data).is_err());
     }
+
     #[test]
     fn test_prediction_broken_model() {
         let mut model = build_model();
@@ -1161,6 +1198,7 @@ mod tests {
                 .collect();
         assert!(model.check_variables(&new_data).is_err());
     }
+
     #[test]
     fn test_prediction() {
         let model = build_model();
@@ -1169,6 +1207,7 @@ mod tests {
         assert_eq!(prediction.len(), 1);
         assert_almost_equal_with_precision(prediction[0], 3.500000000000111, 1.0E-7);
     }
+
     #[test]
     fn test_multiple_predictions() {
         let model = build_model();
@@ -1182,6 +1221,7 @@ mod tests {
         assert_almost_equal_with_precision(prediction[0], 3.500000000000111, 1.0E-7);
         assert_almost_equal_with_precision(prediction[1], 2.5000000000001337, 1.0E-7);
     }
+
     #[test]
     fn test_multiple_predictions_out_of_order() {
         let model = build_model();
@@ -1196,11 +1236,13 @@ mod tests {
         assert_almost_equal_with_precision(prediction[1], 2.5000000000001337, 1.0E-7);
     }
 }
+
 #[cfg(all(feature = "unstable", test))]
 mod bench {
     use super::*;
     extern crate test;
     use test::Bencher;
+
     #[bench]
     fn bench_with_stats(b: &mut Bencher) {
         let y = vec![1., 2., 3., 4., 5.];
@@ -1217,6 +1259,7 @@ mod bench {
                 .fit()
         });
     }
+
     #[bench]
     fn bench_without_stats(b: &mut Bencher) {
         let y = vec![1., 2., 3., 4., 5.];
