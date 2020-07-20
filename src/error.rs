@@ -6,46 +6,7 @@ use std::fmt;
 /// Generally this error corresponds to problems with input data or fitting
 /// a regression model.
 #[derive(Debug, Clone)]
-pub struct Error {
-    kind: ErrorKind,
-}
-
-impl Error {
-    pub(crate) fn new(kind: ErrorKind) -> Error {
-        Error { kind }
-    }
-
-    /// Returns the kind of this error
-    pub fn kind(&self) -> &ErrorKind {
-        &self.kind
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct InconsistentSlopes {
-    output_name_count: usize,
-    slope_count: usize,
-}
-
-impl InconsistentSlopes {
-    pub(crate) fn new(output_name_count: usize, slope_count: usize) -> Self {
-        Self {
-            output_name_count,
-            slope_count,
-        }
-    }
-
-    pub fn get_output_name_count(&self) -> usize {
-        self.output_name_count
-    }
-
-    pub fn get_slope_count(&self) -> usize {
-        self.slope_count
-    }
-}
-
-#[derive(Debug, Clone)]
-pub enum ErrorKind {
+pub enum Error {
     /// Number of slopes and output names is inconsistent.
     InconsistentSlopes(InconsistentSlopes),
     /// Cannot fit model without data.
@@ -76,72 +37,74 @@ pub enum ErrorKind {
     __Nonexhaustive,
 }
 
-impl error::Error for Error {
-    fn description(&self) -> &str {
-        match self.kind {
-            ErrorKind::InconsistentSlopes(_) => "Number of slopes and output names is inconsistent",
-            ErrorKind::NoData => "Cannot fit model without data",
-            ErrorKind::NoFormula => "Cannot fit model without formula",
-            ErrorKind::ColumnNotInData(_) => "Requested column not in data",
-            ErrorKind::InvalidFormula => "Invalid formula",
-            ErrorKind::RegressorRegressandDimensionMismatch(_) => {
-                "Regressor and regressand dimensions do not match"
-            }
-            ErrorKind::RegressionDataError(_) => "Error while processing the regression data",
-            ErrorKind::ModelFittingError(_) => "Error while fitting the model",
-            ErrorKind::ModelColumnNotInData(_) => "Column used in the model is misising from data",
-            ErrorKind::InconsistentVectors => "Given vectors have inconsistent lengths",
-            ErrorKind::InconsistentRegressionModel => "Inconsistent RegressionModel internal state",
-            ErrorKind::__Nonexhaustive => unreachable!(),
+#[derive(Debug, Clone, Copy)]
+pub struct InconsistentSlopes {
+    output_name_count: usize,
+    slope_count: usize,
+}
+
+impl InconsistentSlopes {
+    pub(crate) fn new(output_name_count: usize, slope_count: usize) -> Self {
+        Self {
+            output_name_count,
+            slope_count,
         }
+    }
+
+    pub fn get_output_name_count(&self) -> usize {
+        self.output_name_count
+    }
+
+    pub fn get_slope_count(&self) -> usize {
+        self.slope_count
     }
 }
 
+impl error::Error for Error {}
+
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match &self.kind {
-            ErrorKind::InconsistentSlopes(inconsistent_slopes) => write!(
+        match self {
+            Error::InconsistentSlopes(inconsistent_slopes) => write!(
                 f,
                 "Number of slopes and output names is inconsistent. {} outputs != {} sloped",
                 inconsistent_slopes.get_output_name_count(),
                 inconsistent_slopes.get_slope_count()
             ),
-            ErrorKind::NoData => write!(f, "Cannot fit model without data"),
-            ErrorKind::NoFormula => write!(f, "Cannot fit model without formula"),
-            ErrorKind::InvalidFormula => write!(
+            Error::NoData => write!(f, "Cannot fit model without data"),
+            Error::NoFormula => write!(f, "Cannot fit model without formula"),
+            Error::InvalidFormula => write!(
                 f,
                 "Invalid formula. Expected formula of the form 'y ~ x1 + x2'"
             ),
-            ErrorKind::ColumnNotInData(column) => {
+            Error::ColumnNotInData(column) => {
                 write!(f, "Requested column {} is not in the data", column)
             }
-            ErrorKind::RegressorRegressandDimensionMismatch(column) => write!(
+            Error::RegressorRegressandDimensionMismatch(column) => write!(
                 f,
                 "Regressor dimensions for {} do not match regressand dimensions",
                 column
             ),
-            ErrorKind::RegressionDataError(detail) => {
+            Error::RegressionDataError(detail) => {
                 write!(f, "Error while processing the regression data: {}", detail)
             }
-            ErrorKind::ModelFittingError(detail) => {
+            Error::ModelFittingError(detail) => {
                 write!(f, "Error while fitting the model: {}", detail)
             }
-            ErrorKind::ModelColumnNotInData(column) => write!(
+            Error::ModelColumnNotInData(column) => write!(
                 f,
                 "The column {} used in the model is misising from the provided data",
                 column
             ),
-            ErrorKind::InconsistentVectors => {
-                write!(f, "The given vectors have inconsistent lengths")
-            }
-            ErrorKind::InconsistentRegressionModel => write!(
+            Error::InconsistentVectors => write!(f, "The given vectors have inconsistent lengths"),
+            Error::InconsistentRegressionModel => write!(
                 f,
                 concat!(
                     "The RegressionModel internal state is inconsistent:",
                     " The number of regressor names and values differ."
                 )
             ),
-            ErrorKind::__Nonexhaustive => unreachable!(),
+            Error::__Nonexhaustive => unreachable!(),
         }
     }
 }
