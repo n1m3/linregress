@@ -276,7 +276,7 @@ impl<'a> RegressionData<'a> {
             .into_iter()
             .map(|(key, value)| (key.into(), value))
             .collect();
-        let first_key = temp.keys().nth(0);
+        let first_key = temp.keys().next();
         ensure!(
             first_key.is_some(),
             Error::RegressionDataError("The data contains no columns.".into())
@@ -315,17 +315,15 @@ impl<'a> RegressionData<'a> {
             return Ok(Self { data: temp });
         }
         match invalid_value_handling {
-            InvalidValueHandling::ReturnError => {
-                return Err(Error::RegressionDataError(
-                    "The data contains a non real value (NaN or infinity or negative infinity). \
+            InvalidValueHandling::ReturnError => Err(Error::RegressionDataError(
+                "The data contains a non real value (NaN or infinity or negative infinity). \
                  If you would like to silently drop these values configure the builder with \
                  InvalidValueHandling::DropInvalid."
-                        .into(),
-                ));
-            }
+                    .into(),
+            )),
             InvalidValueHandling::DropInvalid => {
                 let temp = Self::drop_invalid_values(temp);
-                let first_key = temp.keys().nth(0).expect("Cleaned data has no columns.");
+                let first_key = temp.keys().next().expect("Cleaned data has no columns.");
                 let first_len = temp[first_key].len();
                 ensure!(
                     first_len > 0,
@@ -333,17 +331,12 @@ impl<'a> RegressionData<'a> {
                 );
                 Ok(Self { data: temp })
             }
-            _ => {
-                return Err(Error::RegressionDataError(
-                    "Unkown InvalidValueHandling option".into(),
-                ));
-            }
         }
     }
 
     fn check_if_all_columns_are_equal(data: &HashMap<Cow<'a, str>, Vec<f64>>) -> bool {
         for column in data.values() {
-            if column.len() < 1 {
+            if column.is_empty() {
                 return false;
             }
             let first_iter = iter::repeat(&column[0]).take(column.len());
@@ -493,14 +486,12 @@ impl RegressionDataBuilder {
 /// [`RegressionDataBuilder.invalid_value_handling`]: struct.RegressionDataBuilder.html#method.invalid_value_handling
 /// [`ReturnError`]: enum.InvalidValueHandling.html#variant.ReturnError
 #[derive(Debug, Clone, Copy)]
+#[non_exhaustive]
 pub enum InvalidValueHandling {
     /// Return an error to the caller.
     ReturnError,
     /// Drop the columns containing the invalid values.
     DropInvalid,
-    /// Destructuring should not be exhaustive
-    #[doc(hidden)]
-    __Nonexhaustive,
 }
 
 impl Default for InvalidValueHandling {
@@ -592,7 +583,7 @@ impl RegressionModel {
             .map(|(key, value)| (key.into(), value))
             .collect();
         self.check_variables(&new_data)?;
-        let input_len = new_data.values().nth(0).unwrap().len();
+        let input_len = new_data.values().next().unwrap().len();
         let mut new_data_values: Vec<f64> = vec![];
         for key in &self.parameters.regressor_names {
             new_data_values.extend_from_slice(new_data[&Cow::from(key)].as_slice());
@@ -620,7 +611,7 @@ impl RegressionModel {
         given_parameters: &HashMap<Cow<'a, str>, Vec<f64>>,
     ) -> Result<(), Error> {
         ensure!(!given_parameters.is_empty(), Error::NoData);
-        let first_len = given_parameters.values().nth(0).unwrap().len();
+        let first_len = given_parameters.values().next().unwrap().len();
         ensure!(first_len > 0, Error::NoData);
         ensure!(
             self.parameters.regressor_names.len() == self.parameters.regressor_values.len(),
@@ -630,7 +621,7 @@ impl RegressionModel {
             .parameters
             .regressor_names
             .iter()
-            .map(|name| Cow::from(name))
+            .map(Cow::from)
             .collect();
         for param in &model_parameters {
             if !given_parameters.contains_key(param) {
@@ -668,7 +659,7 @@ impl RegressionModel {
             Error::ModelFittingError(
                 "There are not enough residual degrees of freedom to perform statistics on this model".into()));
         let scale = residuals.dot(&residuals) / df_resid as f64;
-        let cov_params = normalized_cov_params.to_owned() * scale;
+        let cov_params = normalized_cov_params * scale;
         let se = get_se_from_cov_params(&cov_params)?;
         let centered_input_matrix = subtract_value_from_matrix(&input_matrix, input_matrix.mean());
         let centered_tss = &centered_input_matrix.dot(&centered_input_matrix);
@@ -809,10 +800,8 @@ fn fit_ols_pinv(
             )
         })?
         .singular_values;
-    let pinv = outputs.pseudo_inverse(0.).or_else(|_| {
-        Err(Error::ModelFittingError(
-            "Taking the pinv of the output matrix failed".into(),
-        ))
+    let pinv = outputs.pseudo_inverse(0.).map_err(|_| {
+        Error::ModelFittingError("Taking the pinv of the output matrix failed".into())
     });
     let pinv = pinv?;
     let normalized_cov_params = &pinv * &pinv.transpose();

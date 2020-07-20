@@ -6,6 +6,7 @@ use std::fmt;
 /// Generally this error corresponds to problems with input data or fitting
 /// a regression model.
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub enum Error {
     /// Number of slopes and output names is inconsistent.
     InconsistentSlopes(InconsistentSlopes),
@@ -29,12 +30,6 @@ pub enum Error {
     InconsistentVectors,
     /// The RegressionModel internal state is inconsistent
     InconsistentRegressionModel,
-    /// Hint that users should not exhaustively mathch on this enum
-    ///
-    /// This enum may gain additional variants, so we prevent exhaustive matching.
-    /// This way adding a new variant won't break existing code.
-    #[doc(hidden)]
-    __Nonexhaustive,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -104,7 +99,6 @@ impl fmt::Display for Error {
                     " The number of regressor names and values differ."
                 )
             ),
-            Error::__Nonexhaustive => unreachable!(),
         }
     }
 }
