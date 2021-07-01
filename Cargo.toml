@@ -13,13 +13,13 @@ license = "MIT"
 exclude = ["*.sh"]
 
 [dependencies]
-nalgebra = "~0.27.1"
-statrs = "~0.14.0"
+nalgebra = "0.27.1"
+statrs = "0.14.0"
 
 [dev-dependencies]
-quickcheck = "~0.8.2"
-quickcheck_macros = "~0.8.0"
-stdtr = "~0.2.0"
+quickcheck = "0.8.2"
+quickcheck_macros = "0.8.0"
+stdtr = "0.2.0"
 
 [features]
 unstable = []
