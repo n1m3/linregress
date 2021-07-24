@@ -876,6 +876,31 @@ impl RegressionParameters {
 /// # Note
 /// - The matrix should already contain the `intercept` column consisting of only the value `1.0`.
 /// - No validation of the data is perfomed, except for a simple dimension consistency check.
+///
+/// # Example
+/// ```
+/// # fn main() -> Result<(), linregress::Error> {
+/// use linregress::fit_low_level_regression_model;
+///
+/// let data_row_major: Vec<f64> = vec![
+///     1., 1.0, 1., 7.,
+///     3., 1.0, 2., 6.,
+///     4., 1.0, 3., 5.,
+///     5., 1.0, 4., 4.,
+///     2., 1.0, 5., 3.,
+///     3., 1.0, 6., 2.,
+///     4., 1.0, 7., 1.,
+/// ];
+/// let model = fit_low_level_regression_model(&data_row_major, 7, 4)?;
+/// let params = [
+///     0.09523809523809511f64,
+///     0.5059523809523809,
+///     0.25595238095238104,
+/// ];
+/// assert_eq!(model.parameters, params);
+/// # Ok(())
+/// # }
+/// ```
 pub fn fit_low_level_regression_model(
     data_row_major: &[f64],
     num_rows: usize,
