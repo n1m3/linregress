@@ -1,6 +1,8 @@
 ## master
 - Add `data_columns` method to `FormulaRegressionBuilder`.
   It allows setting the regressand a regressors without using a formula string.
+- Add `fit_low_level_regression_model` and `fit_low_level_regression_model_without_statistics`
+  functions for performing a regression directly on a matrix of input data.
 
 ## 0.4.3
 - Update `statrs` dependency to `0.15.0` to avoid multiple versions of `nalgebra` in out dependency tree
