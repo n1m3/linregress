@@ -1,5 +1,5 @@
 /*!
-  Crate `linregress` provides an easy to use implementation of ordinary
+  `linregress` provides an easy to use implementation of ordinary
   least squared linear regression with some basic statistics.
   See [`RegressionModel`] for details.
 
@@ -85,7 +85,7 @@ macro_rules! ensure {
 
 /// A builder to create and fit a linear regression model.
 ///
-/// Given a dataset and a regression formula this builder
+/// Given a dataset and a set of columns to use this builder
 /// will produce an ordinary least squared linear regression model.
 ///
 /// See [`formula`] and [`data`] for details on how to configure this builder.
@@ -104,6 +104,8 @@ macro_rules! ensure {
 /// let data = vec![("Y", y), ("X", x)];
 /// let data = RegressionDataBuilder::new().build_from(data)?;
 /// let model = FormulaRegressionBuilder::new().data(&data).formula("Y ~ X").fit()?;
+/// // Alternatively
+/// let model = FormulaRegressionBuilder::new().data(&data).data_columns("Y", ["X"]).fit()?;
 /// assert_eq!(model.parameters.intercept_value, 4.999999999999998);
 /// assert_eq!(model.parameters.regressor_values[0], -0.9999999999999989);
 /// assert_eq!(model.parameters.regressor_names[0], "X");
@@ -117,6 +119,7 @@ macro_rules! ensure {
 pub struct FormulaRegressionBuilder<'a> {
     data: Option<&'a RegressionData<'a>>,
     formula: Option<Cow<'a, str>>,
+    columns: Option<(Cow<'a, str>, Vec<Cow<'a, str>>)>,
 }
 
 impl<'a> Default for FormulaRegressionBuilder<'a> {
@@ -131,6 +134,7 @@ impl<'a> FormulaRegressionBuilder<'a> {
         FormulaRegressionBuilder {
             data: None,
             formula: None,
+            columns: None,
         }
     }
 
@@ -156,8 +160,29 @@ impl<'a> FormulaRegressionBuilder<'a> {
     /// Note that there is currently no special support for categorical variables.
     /// So if you have a categorical variable with more than two distinct values
     /// or values that are not `0` and `1` you will need to perform "dummy coding" yourself.
+    ///
+    /// Alternatively you can use [`data_columns`][Self::data_columns]
     pub fn formula<T: Into<Cow<'a, str>>>(mut self, formula: T) -> Self {
         self.formula = Some(formula.into());
+        self
+    }
+
+    /// Set the columns to be used as regressand and regressors for the regression.
+    ///
+    /// Note that there is currently no special support for categorical variables.
+    /// So if you have a categorical variable with more than two distinct values
+    /// or values that are not `0` and `1` you will need to perform "dummy coding" yourself.
+    ///
+    /// Alternatively you can use [`formula`][Self::formula]
+    pub fn data_columns<I, S1, S2>(mut self, regressand: S1, regressors: I) -> Self
+    where
+        I: IntoIterator<Item = S2>,
+        S1: Into<Cow<'a, str>>,
+        S2: Into<Cow<'a, str>>,
+    {
+        let regressand = regressand.into();
+        let regressors: Vec<_> = regressors.into_iter().map(|i| i.into()).collect();
+        self.columns = Some((regressand, regressors));
         self
     }
 
@@ -203,21 +228,10 @@ impl<'a> FormulaRegressionBuilder<'a> {
     }
 
     fn get_matrices_and_regressor_names(self) -> Result<FittingData, Error> {
-        let data: Result<_, Error> = self.data.ok_or_else(|| Error::NoData);
-        let formula: Result<_, Error> = self.formula.ok_or_else(|| Error::NoFormula);
-        let data = &data?.data;
-        let formula = formula?;
-        let split_formula: Vec<_> = formula.split('~').collect();
-        ensure!(split_formula.len() == 2, Error::InvalidFormula);
-        let input = split_formula[0].trim();
-        let outputs: Vec<_> = split_formula[1]
-            .split('+')
-            .map(str::trim)
-            .filter(|x| *x != "")
-            .collect();
-        ensure!(!outputs.is_empty(), Error::InvalidFormula);
+        let (input, outputs) = self.get_data_columns()?;
+        let data = &self.data.ok_or_else(|| Error::NoData)?.data;
         let input_vector = data
-            .get(input)
+            .get(input.as_ref())
             .ok_or_else(|| Error::ColumnNotInData(input.into()))?;
         let input_vector = RowDVector::from_vec(input_vector.to_vec());
         let mut output_matrix = Vec::new();
@@ -227,11 +241,11 @@ impl<'a> FormulaRegressionBuilder<'a> {
         // Add each input as a new column of the matrix
         for output in outputs.to_owned() {
             let output_vec = data
-                .get(output)
-                .ok_or_else(|| Error::ColumnNotInData(output.into()))?;
+                .get(output.as_ref())
+                .ok_or_else(|| Error::ColumnNotInData(output.to_string()))?;
             ensure!(
                 output_vec.len() == input_vector.len(),
-                Error::RegressorRegressandDimensionMismatch(output.into())
+                Error::RegressorRegressandDimensionMismatch(output.to_string())
             );
             output_matrix.extend(output_vec.iter());
         }
@@ -239,11 +253,36 @@ impl<'a> FormulaRegressionBuilder<'a> {
         let outputs: Vec<_> = outputs.iter().map(|x| x.to_string()).collect();
         Ok(FittingData(input_vector, output_matrix, outputs))
     }
+
+    fn get_data_columns(&self) -> Result<(Cow<'_, str>, Vec<Cow<'_, str>>), Error> {
+        match (self.formula.as_ref(), self.columns.as_ref()) {
+            (Some(..), Some(..)) => Err(Error::BothFormulaAndDataColumnsGiven),
+            (Some(formula), None) => Self::parse_formula(formula),
+            (None, Some((regressand, regressors))) => {
+                ensure!(!regressors.is_empty(), Error::InvalidDataColumns);
+                Ok((regressand.clone(), regressors.clone()))
+            }
+            (None, None) => Err(Error::NoFormula),
+        }
+    }
+
+    fn parse_formula(formula: &str) -> Result<(Cow<'_, str>, Vec<Cow<'_, str>>), Error> {
+        let split_formula: Vec<_> = formula.split('~').collect();
+        ensure!(split_formula.len() == 2, Error::InvalidFormula);
+        let input = split_formula[0].trim();
+        let outputs: Vec<_> = split_formula[1]
+            .split('+')
+            .map(str::trim)
+            .filter(|x| *x != "")
+            .map(|i| i.into())
+            .collect();
+        ensure!(!outputs.is_empty(), Error::InvalidFormula);
+        Ok((input.into(), outputs))
+    }
 }
 
 /// A simple tuple struct to reduce the type complxity of the
 /// return type of get_matrices_and_regressor_names.
-#[derive(Debug, Clone)]
 struct FittingData(RowDVector<f64>, DMatrix<f64>, Vec<String>);
 
 /// A container struct for the regression data.

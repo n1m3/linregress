@@ -12,10 +12,14 @@ pub enum Error {
     InconsistentSlopes(InconsistentSlopes),
     /// Cannot fit model without data.
     NoData,
-    /// Cannot fit model without formula.
+    /// Cannot fit model without formula or data columns.
     NoFormula,
     /// Given formula is invalid.
     InvalidFormula,
+    /// Given data columns are invalid.
+    InvalidDataColumns,
+    /// You must specify either a formula or data columns.
+    BothFormulaAndDataColumnsGiven,
     /// Requested column is not in data. (Column given as String)
     ColumnNotInData(String),
     /// A column used in the model is misising from the provided data
@@ -68,10 +72,14 @@ impl fmt::Display for Error {
             ),
             Error::NoData => write!(f, "Cannot fit model without data"),
             Error::NoFormula => write!(f, "Cannot fit model without formula"),
+            Error::InvalidDataColumns => write!(f, "Invalid data columns"),
             Error::InvalidFormula => write!(
                 f,
                 "Invalid formula. Expected formula of the form 'y ~ x1 + x2'"
             ),
+            Error::BothFormulaAndDataColumnsGiven => {
+                write!(f, "You must specify either a formula or data columns")
+            }
             Error::ColumnNotInData(column) => {
                 write!(f, "Requested column {} is not in the data", column)
             }
