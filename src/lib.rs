@@ -975,6 +975,68 @@ mod tests {
     }
 
     #[test]
+    fn test_pinv_with_data_columns() {
+        use std::collections::HashMap;
+        let inputs = vec![1., 3., 4., 5., 2., 3., 4.];
+        let outputs1 = vec![1., 2., 3., 4., 5., 6., 7.];
+        let outputs2 = vec![7., 6., 5., 4., 3., 2., 1.];
+        let mut data = HashMap::new();
+        data.insert("Y", inputs);
+        data.insert("X1", outputs1);
+        data.insert("X2", outputs2);
+        let data = RegressionDataBuilder::new().build_from(data).unwrap();
+        let regression = FormulaRegressionBuilder::new()
+            .data(&data)
+            .data_columns("Y", ["X1", "X2"])
+            .fit()
+            .expect("Fitting model failed");
+
+        let model_parameters = vec![0.09523809523809523, 0.5059523809523809, 0.2559523809523808];
+        let se = vec![
+            0.015457637291218289,
+            0.1417242813072997,
+            0.14172428130729975,
+        ];
+        let ssr = 9.107142857142858;
+        let rsquared = 0.16118421052631582;
+        let rsquared_adj = -0.006578947368421018;
+        let scale = 1.8214285714285716;
+        let pvalues = vec![
+            0.001639031204417556,
+            0.016044083709847945,
+            0.13074580446389245,
+        ];
+        let residuals = vec![
+            -1.392857142857142,
+            0.3571428571428581,
+            1.1071428571428577,
+            1.8571428571428577,
+            -1.3928571428571423,
+            -0.6428571428571423,
+            0.10714285714285765,
+        ];
+        assert_almost_equal(regression.parameters.intercept_value, model_parameters[0]);
+        assert_almost_equal(
+            regression.parameters.regressor_values[0],
+            model_parameters[1],
+        );
+        assert_almost_equal(
+            regression.parameters.regressor_values[1],
+            model_parameters[2],
+        );
+        assert_almost_equal(regression.se.intercept_value, se[0]);
+        assert_slices_almost_equal(&regression.se.regressor_values, &se[1..]);
+        assert_almost_equal(regression.ssr, ssr);
+        assert_almost_equal(regression.rsquared, rsquared);
+        assert_almost_equal(regression.rsquared_adj, rsquared_adj);
+        assert_almost_equal(regression.pvalues.intercept_value, pvalues[0]);
+        assert_slices_almost_equal(&regression.pvalues.regressor_values, &pvalues[1..]);
+        assert_almost_equal(regression.residuals.intercept_value, residuals[0]);
+        assert_slices_almost_equal(&regression.residuals.regressor_values, &residuals[1..]);
+        assert_eq!(regression.scale, scale);
+    }
+
+    #[test]
     fn test_without_statistics() {
         use std::collections::HashMap;
         let inputs = vec![1., 3., 4., 5., 2., 3., 4.];
@@ -1123,6 +1185,31 @@ mod tests {
         let builder = RegressionDataBuilder::new();
         assert!(builder.build_from(data1).is_err());
         assert!(builder.build_from(data2).is_err());
+    }
+
+    #[test]
+    fn test_no_formula() {
+        let data = vec![("x", vec![1., 2., 3.]), ("foo", vec![0., 0., 0.])];
+        let data = RegressionDataBuilder::new().build_from(data).unwrap();
+        let res = FormulaRegressionBuilder::new().data(&data).fit();
+        assert!(res.is_err());
+    }
+
+    #[test]
+    fn test_both_formula_and_data_columns() {
+        let y = vec![1., 2., 3., 4., 5.];
+        let x1 = vec![5., 4., 3., 2., 1.];
+        let x2 = vec![729.53, 439.0367, 42.054, 1., 0.];
+        let x3 = vec![258.589, 616.297, 215.061, 498.361, 0.];
+        let data = vec![("Y", y), ("X1", x1), ("X2", x2), ("X3", x3)];
+        let data = RegressionDataBuilder::new().build_from(data).unwrap();
+        let formula = "Y ~ X1 + X2 + X3";
+        let res = FormulaRegressionBuilder::new()
+            .data(&data)
+            .formula(formula)
+            .data_columns("Y", ["X1", "X2", "X3"])
+            .fit();
+        assert!(res.is_err());
     }
 
     fn build_model() -> RegressionModel {
