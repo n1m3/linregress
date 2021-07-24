@@ -1153,6 +1153,53 @@ mod tests {
     }
 
     #[test]
+    fn test_low_level_model_fitting() {
+        let inputs = vec![1., 3., 4., 5., 2., 3., 4.];
+        let outputs1 = vec![1., 2., 3., 4., 5., 6., 7.];
+        let outputs2 = vec![7., 6., 5., 4., 3., 2., 1.];
+        let mut data_row_major = Vec::with_capacity(4 * 7);
+        for n in 0..7 {
+            data_row_major.push(inputs[n]);
+            data_row_major.push(1.0);
+            data_row_major.push(outputs1[n]);
+            data_row_major.push(outputs2[n]);
+        }
+        let regression = fit_low_level_regression_model(&data_row_major, 7, 4).unwrap();
+        let model_parameters = vec![0.09523809523809523, 0.5059523809523809, 0.2559523809523808];
+        let se = vec![
+            0.015457637291218289,
+            0.1417242813072997,
+            0.14172428130729975,
+        ];
+        let ssr = 9.107142857142858;
+        let rsquared = 0.16118421052631582;
+        let rsquared_adj = -0.006578947368421018;
+        let scale = 1.8214285714285716;
+        let pvalues = vec![
+            0.001639031204417556,
+            0.016044083709847945,
+            0.13074580446389245,
+        ];
+        let residuals = vec![
+            -1.392857142857142,
+            0.3571428571428581,
+            1.1071428571428577,
+            1.8571428571428577,
+            -1.3928571428571423,
+            -0.6428571428571423,
+            0.10714285714285765,
+        ];
+        assert_slices_almost_equal(&regression.parameters, &model_parameters);
+        assert_slices_almost_equal(&regression.se, &se);
+        assert_almost_equal(regression.ssr, ssr);
+        assert_almost_equal(regression.rsquared, rsquared);
+        assert_almost_equal(regression.rsquared_adj, rsquared_adj);
+        assert_slices_almost_equal(&regression.pvalues, &pvalues);
+        assert_slices_almost_equal(&regression.residuals, &residuals);
+        assert_eq!(regression.scale, scale);
+    }
+
+    #[test]
     fn test_without_statistics() {
         use std::collections::HashMap;
         let inputs = vec![1., 3., 4., 5., 2., 3., 4.];
