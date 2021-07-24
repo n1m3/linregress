@@ -73,7 +73,7 @@ pub fn stdtr(k: i64, t: f64) -> f64 {
 /// from zero to x.
 pub fn inc_beta(a: f64, b: f64, x: f64) -> f64 {
     assert!(a > 0. && b > 0.);
-    assert!(x >= 0. && x <= 1.0);
+    assert!((0. ..=1.0).contains(&x));
     if x == 0.0 {
         return 0.0;
     }

@@ -230,7 +230,7 @@ impl<'a> FormulaRegressionBuilder<'a> {
 
     fn get_matrices_and_regressor_names(self) -> Result<FittingData, Error> {
         let (input, outputs) = self.get_data_columns()?;
-        let data = &self.data.ok_or_else(|| Error::NoData)?.data;
+        let data = &self.data.ok_or(Error::NoData)?.data;
         let input_vector = data
             .get(input.as_ref())
             .ok_or_else(|| Error::ColumnNotInData(input.into()))?;
@@ -274,7 +274,7 @@ impl<'a> FormulaRegressionBuilder<'a> {
         let outputs: Vec<_> = split_formula[1]
             .split('+')
             .map(str::trim)
-            .filter(|x| *x != "")
+            .filter(|x| !x.is_empty())
             .map(|i| i.into())
             .collect();
         ensure!(!outputs.is_empty(), Error::InvalidFormula);
@@ -513,7 +513,7 @@ impl RegressionDataBuilder {
         I: IntoIterator<Item = (S, Vec<f64>)>,
         S: Into<Cow<'a, str>>,
     {
-        Ok(RegressionData::new(data, self.handle_invalid_values)?)
+        RegressionData::new(data, self.handle_invalid_values)
     }
 }
 
