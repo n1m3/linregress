@@ -869,7 +869,7 @@ impl RegressionParameters {
 /// | regressand | intercept | regressor 1 | regressor 2 | …   |
 /// |------------|-----------|-------------|-------------|-----|
 /// | value      | 1.0       | value       | value       | …   |
-/// | ⋮          |           | ⋮           | ⋮           | ⋮   |
+/// | ⋮          | ⋮         | ⋮           | ⋮           | ⋮   |
 ///
 /// in row major order.
 ///
