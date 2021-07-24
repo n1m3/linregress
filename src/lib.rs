@@ -683,16 +683,100 @@ impl RegressionModel {
         output_names: I,
     ) -> Result<Self, Error> {
         let low_level_result = fit_ols_pinv(inputs.to_owned(), outputs.to_owned())?;
+        let LowLevelRegressionModel {
+            parameters,
+            se,
+            ssr,
+            rsquared,
+            rsquared_adj,
+            pvalues,
+            residuals,
+            scale,
+        } = LowLevelRegressionModel::from_low_level_regression(low_level_result)?;
+        let output_names: Vec<_> = output_names.into_iter().collect();
+        let intercept = parameters[0];
+        let slopes: Vec<f64> = parameters.into_iter().skip(1).collect();
+        ensure!(
+            output_names.len() == slopes.len(),
+            Error::InconsistentSlopes(InconsistentSlopes::new(output_names.len(), slopes.len(),))
+        );
+        let parameters = RegressionParameters {
+            intercept_value: intercept,
+            regressor_values: slopes,
+            regressor_names: output_names.to_vec(),
+        };
+        let se = RegressionParameters {
+            intercept_value: se[0],
+            regressor_values: se.iter().cloned().skip(1).collect(),
+            regressor_names: output_names.to_vec(),
+        };
+        let residuals = RegressionParameters {
+            intercept_value: residuals[0],
+            regressor_values: residuals.iter().cloned().skip(1).collect(),
+            regressor_names: output_names.to_vec(),
+        };
+        let pvalues = RegressionParameters {
+            intercept_value: pvalues[0],
+            regressor_values: pvalues.iter().cloned().skip(1).collect(),
+            regressor_names: output_names.to_vec(),
+        };
+        Ok(Self {
+            parameters,
+            se,
+            ssr,
+            rsquared,
+            rsquared_adj,
+            pvalues,
+            residuals,
+            scale,
+        })
+    }
+}
+
+/// A fitted regression model
+///
+/// Is the result of [`fit_low_level_regression_model`].
+///
+/// If a field has only one value for the model it is given as `f64`.
+///
+/// Otherwise it  is given as a `Vec<f64>` where the first value is the intercept value.
+#[derive(Debug, Clone)]
+pub struct LowLevelRegressionModel {
+    /// The model's intercept and slopes (also known as betas).
+    pub parameters: Vec<f64>,
+    /// The standard errors of the parameter estimates.
+    pub se: Vec<f64>,
+    /// Sum of squared residuals.
+    pub ssr: f64,
+    /// R-squared of the model.
+    pub rsquared: f64,
+    /// Adjusted R-squared of the model.
+    pub rsquared_adj: f64,
+    /// The two-tailed p-values for the t-statistics of the params.
+    pub pvalues: Vec<f64>,
+    /// The residuals of the model.
+    pub residuals: Vec<f64>,
+    ///  A scale factor for the covariance matrix.
+    ///
+    ///  Note that the square root of `scale` is often
+    ///  called the standard error of the regression.
+    pub scale: f64,
+}
+
+impl LowLevelRegressionModel {
+    fn from_low_level_regression(
+        low_level_result: InternalLowLevelRegressionResult,
+    ) -> Result<Self, Error> {
         let parameters = low_level_result.params;
         let singular_values = low_level_result.singular_values;
         let normalized_cov_params = low_level_result.normalized_cov_params;
         let diag = DMatrix::from_diagonal(&singular_values);
         let rank = &diag.rank(0.0);
-        let input_vec: Vec<_> = inputs.iter().cloned().collect();
-        let input_matrix = DMatrix::from_vec(inputs.len(), 1, input_vec);
-        let residuals = &input_matrix - (outputs * parameters.to_owned());
+        let input_vec: Vec<_> = low_level_result.inputs.iter().copied().collect();
+        let input_matrix = DMatrix::from_vec(low_level_result.inputs.len(), 1, input_vec);
+        let residuals = &input_matrix - (low_level_result.outputs * parameters.to_owned());
         let ssr = residuals.dot(&residuals);
-        let n = inputs.ncols();
+        let n = low_level_result.inputs.ncols();
         let df_resid = n - rank;
         ensure!(
             df_resid >= 1,
@@ -716,35 +800,9 @@ impl RegressionModel {
             .map(|x| stdtr(df_resid as i64, -(x.abs())) * 2.)
             .collect();
         // Convert these from interal Matrix types to user facing types
-        let intercept = parameters[0];
-        let slopes: Vec<_> = parameters.iter().cloned().skip(1).collect();
-        let output_names: Vec<_> = output_names.into_iter().collect();
-        ensure!(
-            output_names.len() == slopes.len(),
-            Error::InconsistentSlopes(InconsistentSlopes::new(output_names.len(), slopes.len(),))
-        );
-        let parameters = RegressionParameters {
-            intercept_value: intercept,
-            regressor_values: slopes,
-            regressor_names: output_names.to_vec(),
-        };
-        let se: Vec<_> = se.iter().cloned().collect();
-        let se = RegressionParameters {
-            intercept_value: se[0],
-            regressor_values: se.iter().cloned().skip(1).collect(),
-            regressor_names: output_names.to_vec(),
-        };
-        let residuals: Vec<_> = residuals.iter().cloned().collect();
-        let residuals = RegressionParameters {
-            intercept_value: residuals[0],
-            regressor_values: residuals.iter().cloned().skip(1).collect(),
-            regressor_names: output_names.to_vec(),
-        };
-        let pvalues = RegressionParameters {
-            intercept_value: pvalues[0],
-            regressor_values: pvalues.iter().cloned().skip(1).collect(),
-            regressor_names: output_names.to_vec(),
-        };
+        let parameters: Vec<f64> = parameters.iter().copied().collect();
+        let se: Vec<f64> = se.iter().copied().collect();
+        let residuals: Vec<f64> = residuals.iter().copied().collect();
         Ok(Self {
             parameters,
             se,
@@ -804,9 +862,64 @@ impl RegressionParameters {
     }
 }
 
+/// Fit a regression model directly on a matrix of input data
+///
+/// Expects a matrix in the format
+///
+/// | regressand | intercept | regressor 1 | regressor 2 | …   |
+/// |------------|-----------|-------------|-------------|-----|
+/// | value      | 1.0       | value       | value       | …   |
+/// | ⋮          |           | ⋮           | ⋮           | ⋮   |
+///
+/// in row major order.
+///
+/// # Note
+/// - The matrix should already contain the `intercept` column consisting of only the value `1.0`.
+/// - No validation of the data is perfomed, except for a simple dimension consistency check.
+pub fn fit_low_level_regression_model(
+    data_row_major: &[f64],
+    num_rows: usize,
+    num_columns: usize,
+) -> Result<LowLevelRegressionModel, Error> {
+    let regression = get_low_level_regression(data_row_major, num_rows, num_columns)?;
+    let model = LowLevelRegressionModel::from_low_level_regression(regression)?;
+    Ok(model)
+}
+
+/// Like [`fit_low_level_regression_model`] but does not compute any statistics after
+/// fitting the model.
+///
+/// Returns a `Vec<f64>` analogous to the `parameters` field of [`LowLevelRegressionModel`].
+pub fn fit_low_level_regression_model_without_statistics(
+    data_row_major: &[f64],
+    num_rows: usize,
+    num_columns: usize,
+) -> Result<Vec<f64>, Error> {
+    let regression = get_low_level_regression(data_row_major, num_rows, num_columns)?;
+    Ok(regression.params.iter().copied().collect())
+}
+
+fn get_low_level_regression(
+    data_row_major: &[f64],
+    num_rows: usize,
+    num_columns: usize,
+) -> Result<InternalLowLevelRegressionResult, Error> {
+    ensure!(
+        !data_row_major.is_empty() && num_rows * num_columns == data_row_major.len(),
+        Error::InconsistentVectors
+    );
+    let data = DMatrix::from_row_slice(num_rows, num_columns, data_row_major);
+    let inputs = data.slice((0, 0), (num_rows, 1));
+    let inputs: RowDVector<f64> = RowDVector::from_iterator(num_rows, inputs.iter().copied());
+    let outputs: DMatrix<f64> = data.slice((0, 1), (num_rows, num_columns - 1)).into_owned();
+    fit_ols_pinv(inputs, outputs)
+}
+
 /// Result of fitting a low level matrix based model
 #[derive(Debug, Clone)]
-struct LowLevelRegressionResult {
+struct InternalLowLevelRegressionResult {
+    inputs: RowDVector<f64>,
+    outputs: DMatrix<f64>,
     params: DMatrix<f64>,
     singular_values: DVector<f64>,
     normalized_cov_params: DMatrix<f64>,
@@ -818,7 +931,7 @@ struct LowLevelRegressionResult {
 fn fit_ols_pinv(
     inputs: RowDVector<f64>,
     outputs: DMatrix<f64>,
-) -> Result<LowLevelRegressionResult, Error> {
+) -> Result<InternalLowLevelRegressionResult, Error> {
     ensure!(
         !inputs.is_empty(),
         Error::ModelFittingError(
@@ -840,7 +953,7 @@ fn fit_ols_pinv(
             )
         })?
         .singular_values;
-    let pinv = outputs.pseudo_inverse(0.).map_err(|_| {
+    let pinv = outputs.clone().pseudo_inverse(0.).map_err(|_| {
         Error::ModelFittingError("Taking the pinv of the output matrix failed".into())
     });
     let pinv = pinv?;
@@ -850,7 +963,9 @@ fn fit_ols_pinv(
         params.len() >= 2,
         Error::ModelFittingError("Invalid parameter matrix".into())
     );
-    Ok(LowLevelRegressionResult {
+    Ok(InternalLowLevelRegressionResult {
+        inputs,
+        outputs,
         params,
         singular_values,
         normalized_cov_params,
