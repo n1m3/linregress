@@ -4,7 +4,8 @@
   See [`RegressionModel`] for details.
 
   The builder [`FormulaRegressionBuilder`] is used to construct a model from a
-  table of data and a R-style formula. Currently only very simple formulae are supported,
+  table of data and an R-style formula or a list of columns to use.
+  Currently only very simple formulae are supported,
   see [`FormulaRegressionBuilder.formula`] for details.
 
   # Example
@@ -161,7 +162,7 @@ impl<'a> FormulaRegressionBuilder<'a> {
     /// So if you have a categorical variable with more than two distinct values
     /// or values that are not `0` and `1` you will need to perform "dummy coding" yourself.
     ///
-    /// Alternatively you can use [`data_columns`][Self::data_columns]
+    /// Alternatively you can use [`data_columns`][Self::data_columns].
     pub fn formula<T: Into<Cow<'a, str>>>(mut self, formula: T) -> Self {
         self.formula = Some(formula.into());
         self
@@ -173,7 +174,7 @@ impl<'a> FormulaRegressionBuilder<'a> {
     /// So if you have a categorical variable with more than two distinct values
     /// or values that are not `0` and `1` you will need to perform "dummy coding" yourself.
     ///
-    /// Alternatively you can use [`formula`][Self::formula]
+    /// Alternatively you can use [`formula`][Self::formula].
     pub fn data_columns<I, S1, S2>(mut self, regressand: S1, regressors: I) -> Self
     where
         I: IntoIterator<Item = S2>,
