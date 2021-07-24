@@ -875,7 +875,7 @@ impl RegressionParameters {
 ///
 /// # Note
 /// - The matrix should already contain the `intercept` column consisting of only the value `1.0`.
-/// - No validation of the data is perfomed, except for a simple dimension consistency check.
+/// - No validation of the data is performed, except for a simple dimension consistency check.
 ///
 /// # Example
 /// ```
