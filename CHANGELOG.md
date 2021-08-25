@@ -1,4 +1,4 @@
-## master
+## 0.4.4
 - Add `data_columns` method to `FormulaRegressionBuilder`.
   It allows setting the regressand a regressors without using a formula string.
 - Add `fit_low_level_regression_model` and `fit_low_level_regression_model_without_statistics`
