@@ -231,7 +231,7 @@ impl<'a> FormulaRegressionBuilder<'a> {
         let all_ones_column = iter::repeat(1.).take(input_vector.len());
         output_matrix.extend(all_ones_column);
         // Add each input as a new column of the matrix
-        for output in outputs.to_owned() {
+        for output in &outputs {
             let output_vec = data
                 .get(output.as_ref())
                 .ok_or_else(|| Error::ColumnNotInData(output.to_string()))?;
@@ -412,17 +412,9 @@ impl<'a> RegressionData<'a> {
 /// A builder to create a RegressionData struct for use with a [`FormulaRegressionBuilder`].
 ///
 /// [`FormulaRegressionBuilder`]: struct.FormulaRegressionBuilder.html
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct RegressionDataBuilder {
     handle_invalid_values: InvalidValueHandling,
-}
-
-impl Default for RegressionDataBuilder {
-    fn default() -> RegressionDataBuilder {
-        RegressionDataBuilder {
-            handle_invalid_values: InvalidValueHandling::default(),
-        }
-    }
 }
 
 impl RegressionDataBuilder {
@@ -557,7 +549,7 @@ impl RegressionModel {
     /// The two-tailed p-values for the t-statistics of the parameters
     #[inline]
     pub fn p_values(&self) -> &[f64] {
-        &self.model.p_values()
+        self.model.p_values()
     }
 
     /// Iterates over pairs of regressor columns and their associated p-values
@@ -596,13 +588,13 @@ impl RegressionModel {
     /// The residuals of the model
     #[inline]
     pub fn residuals(&self) -> &[f64] {
-        &self.model.residuals()
+        self.model.residuals()
     }
 
     /// The model's intercept and slopes (also known as betas)
     #[inline]
     pub fn parameters(&self) -> &[f64] {
-        &self.model.parameters()
+        self.model.parameters()
     }
 
     /// Iterates over pairs of regressor columns and their associated slope values
@@ -641,7 +633,7 @@ impl RegressionModel {
     /// The standard errors of the parameter estimates
     #[inline]
     pub fn se(&self) -> &[f64] {
-        &self.model.se()
+        self.model.se()
     }
 
     /// Iterates over pairs of regressor columns and their associated standard errors
@@ -800,7 +792,7 @@ impl RegressionModel {
         outputs: DMatrix<f64>,
         output_names: I,
     ) -> Result<Self, Error> {
-        let low_level_result = fit_ols_pinv(inputs.to_owned(), outputs.to_owned())?;
+        let low_level_result = fit_ols_pinv(inputs, outputs)?;
         let model = LowLevelRegressionModel::from_low_level_regression(low_level_result)?;
         let regressor_names: Vec<String> = output_names.into_iter().collect();
         let num_slopes = model.parameters.len() - 1;
