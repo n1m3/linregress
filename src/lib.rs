@@ -26,11 +26,11 @@
       .data(&data)
       .formula(formula)
       .fit()?;
-  let parameters = model.parameters;
-  let standard_errors = model.se;
-  let pvalues = model.pvalues;
+  let parameters: Vec<_> = model.iter_parameter_pairs().collect();
+  let pvalues: Vec<_> = model.iter_p_value_pairs().collect();
+  let standard_errors: Vec<_> = model.iter_se_pairs().collect();
   assert_eq!(
-      parameters.pairs(),
+      parameters,
       vec![
           ("X1", -0.9999999999999745),
           ("X2", 0.00000000000000005637851296924623),
@@ -38,7 +38,7 @@
       ]
   );
   assert_eq!(
-      standard_errors.pairs(),
+      standard_errors,
       vec![
           ("X1", 0.00000000000019226371555402852),
           ("X2", 0.0000000000000008718958950659518),
@@ -46,7 +46,7 @@
       ]
   );
   assert_eq!(
-      pvalues.pairs(),
+      pvalues,
       vec![
           ("X1", 0.00000000000012239888283055414),
           ("X2", 0.9588921357097694),
@@ -107,9 +107,10 @@ macro_rules! ensure {
 /// let model = FormulaRegressionBuilder::new().data(&data).formula("Y ~ X").fit()?;
 /// // Alternatively
 /// let model = FormulaRegressionBuilder::new().data(&data).data_columns("Y", ["X"]).fit()?;
-/// assert_eq!(model.parameters.intercept_value, 4.999999999999998);
-/// assert_eq!(model.parameters.regressor_values[0], -0.9999999999999989);
-/// assert_eq!(model.parameters.regressor_names[0], "X");
+/// let params = model.parameters();
+/// assert_eq!(params[0], 4.999999999999998);
+/// assert_eq!(params[1], -0.9999999999999989);
+/// assert_eq!(model.regressor_names()[0], "X");
 /// # Ok(())
 /// # }
 /// ```
@@ -201,8 +202,8 @@ impl<'a> FormulaRegressionBuilder<'a> {
     }
 
     /// Like [`fit`] but does not perfom any statistics on the resulting model.
-    /// Returns a [`RegressionParameters`] struct containing the model parameters
-    /// if successfull.
+    /// Returns a [`Vec`] containing the model parameters
+    /// (in the order `intercept, column 1, column 2, …`) if successfull.
     ///
     /// This is usefull if you do not care about the statistics or the model and data
     /// you want to fit result in too few residual degrees of freedom to perform
@@ -210,22 +211,12 @@ impl<'a> FormulaRegressionBuilder<'a> {
     ///
     /// [`fit`]: struct.FormulaRegressionBuilder.html#method.fit
     /// [`RegressionParameters`]: struct.RegressionParameters.html
-    pub fn fit_without_statistics(self) -> Result<RegressionParameters, Error> {
-        let FittingData(input_vector, output_matrix, output_names) =
+    pub fn fit_without_statistics(self) -> Result<Vec<f64>, Error> {
+        let FittingData(input_vector, output_matrix, _output_names) =
             Self::get_matrices_and_regressor_names(self)?;
         let low_level_result = fit_ols_pinv(input_vector, output_matrix)?;
         let parameters = low_level_result.params;
-        let intercept = parameters[0];
-        let slopes: Vec<_> = parameters.iter().cloned().skip(1).collect();
-        ensure!(
-            output_names.len() == slopes.len(),
-            Error::InconsistentSlopes(InconsistentSlopes::new(output_names.len(), slopes.len()))
-        );
-        Ok(RegressionParameters {
-            intercept_value: intercept,
-            regressor_values: slopes,
-            regressor_names: output_names.to_vec(),
-        })
+        Ok(parameters.iter().copied().collect())
     }
 
     fn get_matrices_and_regressor_names(self) -> Result<FittingData, Error> {
@@ -552,28 +543,166 @@ impl Default for InvalidValueHandling {
 ///[`FormulaRegressionBuilder.fit()`]: struct.FormulaRegressionBuilder.html#method.fit
 #[derive(Debug, Clone)]
 pub struct RegressionModel {
-    /// The model's intercept and slopes (also known as betas).
-    pub parameters: RegressionParameters,
-    /// The standard errors of the parameter estimates.
-    pub se: RegressionParameters,
-    /// Sum of squared residuals.
-    pub ssr: f64,
-    /// R-squared of the model.
-    pub rsquared: f64,
-    /// Adjusted R-squared of the model.
-    pub rsquared_adj: f64,
-    /// The two-tailed p-values for the t-statistics of the params.
-    pub pvalues: RegressionParameters,
-    /// The residuals of the model.
-    pub residuals: RegressionParameters,
-    ///  A scale factor for the covariance matrix.
-    ///
-    ///  Note that the square root of `scale` is often
-    ///  called the standard error of the regression.
-    pub scale: f64,
+    regressor_names: Vec<String>,
+    model: LowLevelRegressionModel,
 }
 
 impl RegressionModel {
+    /// The names of the regressor columns
+    #[inline]
+    pub fn regressor_names(&self) -> &[String] {
+        &self.regressor_names
+    }
+
+    /// The two-tailed p-values for the t-statistics of the parameters
+    #[inline]
+    pub fn p_values(&self) -> &[f64] {
+        &self.model.p_values()
+    }
+
+    /// Iterates over pairs of regressor columns and their associated p-values
+    ///
+    /// # Note
+    ///
+    /// This does not include the value for the intercept.
+    ///
+    /// # Usage
+    ///
+    /// ```
+    /// # use linregress::Error;
+    /// # fn main() -> Result<(), Error> {
+    /// use linregress::{FormulaRegressionBuilder, RegressionDataBuilder};
+    ///
+    /// let y = vec![1.,2. ,3. , 4.];
+    /// let x1 = vec![4., 3., 2., 1.];
+    /// let x2 = vec![1., 2., 3., 4.];
+    /// let data = vec![("Y", y), ("X1", x1), ("X2", x2)];
+    /// let data = RegressionDataBuilder::new().build_from(data)?;
+    /// let model = FormulaRegressionBuilder::new().data(&data).formula("Y ~ X1 + X2").fit()?;
+    /// let pairs: Vec<(&str, f64)> = model.iter_p_value_pairs().collect();
+    /// assert_eq!(pairs[0], ("X1", 2.2105361678489907e-29));
+    /// assert_eq!(pairs[1], ("X2", 3.270023916936405e-32));
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    pub fn iter_p_value_pairs(&self) -> impl Iterator<Item = (&str, f64)> + '_ {
+        self.regressor_names
+            .iter()
+            .zip(self.model.p_values().iter().skip(1))
+            .map(|(r, &v)| (r.as_str(), v))
+    }
+
+    /// The residuals of the model
+    #[inline]
+    pub fn residuals(&self) -> &[f64] {
+        &self.model.residuals()
+    }
+
+    /// The model's intercept and slopes (also known as betas)
+    #[inline]
+    pub fn parameters(&self) -> &[f64] {
+        &self.model.parameters()
+    }
+
+    /// Iterates over pairs of regressor columns and their associated slope values
+    ///
+    /// # Note
+    ///
+    /// This does not include the value for the intercept.
+    ///
+    /// # Usage
+    ///
+    /// ```
+    /// # use linregress::Error;
+    /// # fn main() -> Result<(), Error> {
+    /// use linregress::{FormulaRegressionBuilder, RegressionDataBuilder};
+    ///
+    /// let y = vec![1.,2. ,3. , 4.];
+    /// let x1 = vec![4., 3., 2., 1.];
+    /// let x2 = vec![1., 2., 3., 4.];
+    /// let data = vec![("Y", y), ("X1", x1), ("X2", x2)];
+    /// let data = RegressionDataBuilder::new().build_from(data)?;
+    /// let model = FormulaRegressionBuilder::new().data(&data).formula("Y ~ X1 + X2").fit()?;
+    /// let pairs: Vec<(&str, f64)> = model.iter_parameter_pairs().collect();
+    /// assert_eq!(pairs[0], ("X1", -0.0370370370370372));
+    /// assert_eq!(pairs[1], ("X2", 0.9629629629629629));
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    pub fn iter_parameter_pairs(&self) -> impl Iterator<Item = (&str, f64)> + '_ {
+        self.regressor_names
+            .iter()
+            .zip(self.model.parameters().iter().skip(1))
+            .map(|(r, &v)| (r.as_str(), v))
+    }
+
+    /// The standard errors of the parameter estimates
+    #[inline]
+    pub fn se(&self) -> &[f64] {
+        &self.model.se()
+    }
+
+    /// Iterates over pairs of regressor columns and their associated standard errors
+    ///
+    /// # Note
+    ///
+    /// This does not include the value for the intercept.
+    ///
+    /// # Usage
+    ///
+    /// ```
+    /// # use linregress::Error;
+    /// # fn main() -> Result<(), Error> {
+    /// use linregress::{FormulaRegressionBuilder, RegressionDataBuilder};
+    ///
+    /// let y = vec![1.,2. ,3. , 4.];
+    /// let x1 = vec![4., 3., 2., 1.];
+    /// let x2 = vec![1., 2., 3., 4.];
+    /// let data = vec![("Y", y), ("X1", x1), ("X2", x2)];
+    /// let data = RegressionDataBuilder::new().build_from(data)?;
+    /// let model = FormulaRegressionBuilder::new().data(&data).formula("Y ~ X1 + X2").fit()?;
+    /// let pairs: Vec<(&str, f64)> = model.iter_parameter_pairs().collect();
+    /// assert_eq!(pairs[0], ("X1", -0.0370370370370372));
+    /// assert_eq!(pairs[1], ("X2", 0.9629629629629629));
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    pub fn iter_se_pairs(&self) -> impl Iterator<Item = (&str, f64)> + '_ {
+        self.regressor_names
+            .iter()
+            .zip(self.model.se().iter().skip(1))
+            .map(|(r, &v)| (r.as_str(), v))
+    }
+
+    /// Sum of squared residuals
+    #[inline]
+    pub fn ssr(&self) -> f64 {
+        self.model.ssr()
+    }
+
+    /// R-squared of the model
+    #[inline]
+    pub fn rsquared(&self) -> f64 {
+        self.model.rsquared()
+    }
+
+    /// Adjusted R-squared of the model
+    #[inline]
+    pub fn rsquared_adj(&self) -> f64 {
+        self.model.rsquared_adj()
+    }
+
+    /// A scale factor for the covariance matrix
+    ///
+    /// Note that the square root of `scale` is often
+    /// called the standard error of the regression.
+    #[inline]
+    pub fn scale(&self) -> f64 {
+        self.model.scale()
+    }
     /// Evaluates the model on given new input data and returns the predicted values.
     ///
     /// The new data is expected to have the same columns as the original data.
@@ -625,20 +754,18 @@ impl RegressionModel {
         self.check_variables(&new_data)?;
         let input_len = new_data.values().next().unwrap().len();
         let mut new_data_values: Vec<f64> = vec![];
-        for key in &self.parameters.regressor_names {
+        for key in &self.regressor_names {
             new_data_values.extend_from_slice(new_data[&Cow::from(key)].as_slice());
         }
-        let new_data_matrix = DMatrix::from_vec(
-            input_len,
-            self.parameters.regressor_values.len(),
-            new_data_values,
-        );
+
+        let num_regressors = self.model.parameters.len() - 1;
+        let new_data_matrix = DMatrix::from_vec(input_len, num_regressors, new_data_values);
         let param_matrix = DMatrix::from_iterator(
-            self.parameters.regressor_values.len(),
+            num_regressors,
             1,
-            self.parameters.regressor_values.iter().copied(),
+            self.model.parameters.iter().skip(1).copied(),
         );
-        let intercept = self.parameters.intercept_value;
+        let intercept = self.model.parameters[0];
         let intercept_matrix =
             DMatrix::from_iterator(input_len, 1, std::iter::repeat(intercept).take(input_len));
         let predictions = (new_data_matrix * param_matrix) + intercept_matrix;
@@ -653,16 +780,7 @@ impl RegressionModel {
         ensure!(!given_parameters.is_empty(), Error::NoData);
         let first_len = given_parameters.values().next().unwrap().len();
         ensure!(first_len > 0, Error::NoData);
-        ensure!(
-            self.parameters.regressor_names.len() == self.parameters.regressor_values.len(),
-            Error::InconsistentRegressionModel
-        );
-        let model_parameters: HashSet<_> = self
-            .parameters
-            .regressor_names
-            .iter()
-            .map(Cow::from)
-            .collect();
+        let model_parameters: HashSet<_> = self.regressor_names.iter().map(Cow::from).collect();
         for param in &model_parameters {
             if !given_parameters.contains_key(param) {
                 return Err(Error::ColumnNotInData(param.to_string()));
@@ -683,52 +801,16 @@ impl RegressionModel {
         output_names: I,
     ) -> Result<Self, Error> {
         let low_level_result = fit_ols_pinv(inputs.to_owned(), outputs.to_owned())?;
-        let LowLevelRegressionModel {
-            parameters,
-            se,
-            ssr,
-            rsquared,
-            rsquared_adj,
-            pvalues,
-            residuals,
-            scale,
-        } = LowLevelRegressionModel::from_low_level_regression(low_level_result)?;
-        let output_names: Vec<_> = output_names.into_iter().collect();
-        let intercept = parameters[0];
-        let slopes: Vec<f64> = parameters.into_iter().skip(1).collect();
+        let model = LowLevelRegressionModel::from_low_level_regression(low_level_result)?;
+        let regressor_names: Vec<String> = output_names.into_iter().collect();
+        let num_slopes = model.parameters.len() - 1;
         ensure!(
-            output_names.len() == slopes.len(),
-            Error::InconsistentSlopes(InconsistentSlopes::new(output_names.len(), slopes.len(),))
+            regressor_names.len() == num_slopes,
+            Error::InconsistentSlopes(InconsistentSlopes::new(regressor_names.len(), num_slopes))
         );
-        let parameters = RegressionParameters {
-            intercept_value: intercept,
-            regressor_values: slopes,
-            regressor_names: output_names.to_vec(),
-        };
-        let se = RegressionParameters {
-            intercept_value: se[0],
-            regressor_values: se.iter().cloned().skip(1).collect(),
-            regressor_names: output_names.to_vec(),
-        };
-        let residuals = RegressionParameters {
-            intercept_value: residuals[0],
-            regressor_values: residuals.iter().cloned().skip(1).collect(),
-            regressor_names: output_names.to_vec(),
-        };
-        let pvalues = RegressionParameters {
-            intercept_value: pvalues[0],
-            regressor_values: pvalues.iter().cloned().skip(1).collect(),
-            regressor_names: output_names.to_vec(),
-        };
         Ok(Self {
-            parameters,
-            se,
-            ssr,
-            rsquared,
-            rsquared_adj,
-            pvalues,
-            residuals,
-            scale,
+            regressor_names,
+            model,
         })
     }
 }
@@ -743,24 +825,24 @@ impl RegressionModel {
 #[derive(Debug, Clone)]
 pub struct LowLevelRegressionModel {
     /// The model's intercept and slopes (also known as betas).
-    pub parameters: Vec<f64>,
+    parameters: Vec<f64>,
     /// The standard errors of the parameter estimates.
-    pub se: Vec<f64>,
+    se: Vec<f64>,
     /// Sum of squared residuals.
-    pub ssr: f64,
+    ssr: f64,
     /// R-squared of the model.
-    pub rsquared: f64,
+    rsquared: f64,
     /// Adjusted R-squared of the model.
-    pub rsquared_adj: f64,
+    rsquared_adj: f64,
     /// The two-tailed p-values for the t-statistics of the params.
-    pub pvalues: Vec<f64>,
+    pvalues: Vec<f64>,
     /// The residuals of the model.
-    pub residuals: Vec<f64>,
+    residuals: Vec<f64>,
     ///  A scale factor for the covariance matrix.
     ///
     ///  Note that the square root of `scale` is often
     ///  called the standard error of the regression.
-    pub scale: f64,
+    scale: f64,
 }
 
 impl LowLevelRegressionModel {
@@ -814,51 +896,56 @@ impl LowLevelRegressionModel {
             scale,
         })
     }
-}
 
-/// A parameter of a fitted [`RegressionModel`] given for the intercept and each regressor.
-///
-/// The values and names of the regressors are given in the same order.
-///
-/// You can obtain name value pairs using [`pairs`].
-///
-/// [`RegressionModel`]: struct.RegressionModel.html
-/// [`pairs`]: struct.RegressionParameters.html#method.pairs
-#[derive(Debug, Clone)]
-pub struct RegressionParameters {
-    pub intercept_value: f64,
-    pub regressor_names: Vec<String>,
-    pub regressor_values: Vec<f64>,
-}
+    /// The two-tailed p-values for the t-statistics of the parameters
+    #[inline]
+    pub fn p_values(&self) -> &[f64] {
+        &self.pvalues
+    }
 
-impl RegressionParameters {
-    /// Returns the parameters as a Vec of tuples of the form `(name: &str, value: f64)`.
+    /// The residuals of the model
+    #[inline]
+    pub fn residuals(&self) -> &[f64] {
+        &self.residuals
+    }
+
+    /// The model's intercept and slopes (also known as betas)
+    #[inline]
+    pub fn parameters(&self) -> &[f64] {
+        &self.parameters
+    }
+
+    /// The standard errors of the parameter estimates
+    #[inline]
+    pub fn se(&self) -> &[f64] {
+        &self.se
+    }
+
+    /// Sum of squared residuals
+    #[inline]
+    pub fn ssr(&self) -> f64 {
+        self.ssr
+    }
+
+    /// R-squared of the model
+    #[inline]
+    pub fn rsquared(&self) -> f64 {
+        self.rsquared
+    }
+
+    /// Adjusted R-squared of the model
+    #[inline]
+    pub fn rsquared_adj(&self) -> f64 {
+        self.rsquared_adj
+    }
+
+    /// A scale factor for the covariance matrix
     ///
-    /// # Usage
-    ///
-    /// ```
-    /// use linregress::{FormulaRegressionBuilder, RegressionDataBuilder};
-    ///
-    /// # use linregress::Error;
-    /// # fn main() -> Result<(), Error> {
-    /// let y = vec![1.,2. ,3. , 4.];
-    /// let x1 = vec![4., 3., 2., 1.];
-    /// let x2 = vec![1., 2., 3., 4.];
-    /// let data = vec![("Y", y), ("X1", x1), ("X2", x2)];
-    /// let data = RegressionDataBuilder::new().build_from(data)?;
-    /// let model = FormulaRegressionBuilder::new().data(&data).formula("Y ~ X1 + X2").fit()?;
-    /// let pairs = model.parameters.pairs();
-    /// assert_eq!(pairs[0], ("X1", -0.0370370370370372));
-    /// assert_eq!(pairs[1], ("X2", 0.9629629629629629));
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub fn pairs(&self) -> Vec<(&str, f64)> {
-        self.regressor_names
-            .iter()
-            .zip(self.regressor_values.iter())
-            .map(|(x, y)| (x.as_str(), *y))
-            .collect()
+    /// Note that the square root of `scale` is often
+    /// called the standard error of the regression.
+    #[inline]
+    pub fn scale(&self) -> f64 {
+        self.scale
     }
 }
 
@@ -897,7 +984,7 @@ impl RegressionParameters {
 ///     0.5059523809523809,
 ///     0.25595238095238104,
 /// ];
-/// assert_eq!(model.parameters, params);
+/// assert_eq!(model.parameters(), &params);
 /// # Ok(())
 /// # }
 /// ```
@@ -1094,25 +1181,14 @@ mod tests {
             -0.6428571428571423,
             0.10714285714285765,
         ];
-        assert_almost_equal(regression.parameters.intercept_value, model_parameters[0]);
-        assert_almost_equal(
-            regression.parameters.regressor_values[0],
-            model_parameters[1],
-        );
-        assert_almost_equal(
-            regression.parameters.regressor_values[1],
-            model_parameters[2],
-        );
-        assert_almost_equal(regression.se.intercept_value, se[0]);
-        assert_slices_almost_equal(&regression.se.regressor_values, &se[1..]);
-        assert_almost_equal(regression.ssr, ssr);
-        assert_almost_equal(regression.rsquared, rsquared);
-        assert_almost_equal(regression.rsquared_adj, rsquared_adj);
-        assert_almost_equal(regression.pvalues.intercept_value, pvalues[0]);
-        assert_slices_almost_equal(&regression.pvalues.regressor_values, &pvalues[1..]);
-        assert_almost_equal(regression.residuals.intercept_value, residuals[0]);
-        assert_slices_almost_equal(&regression.residuals.regressor_values, &residuals[1..]);
-        assert_eq!(regression.scale, scale);
+        assert_slices_almost_equal(regression.parameters(), &model_parameters);
+        assert_slices_almost_equal(regression.se(), &se);
+        assert_almost_equal(regression.ssr(), ssr);
+        assert_almost_equal(regression.rsquared(), rsquared);
+        assert_almost_equal(regression.rsquared_adj(), rsquared_adj);
+        assert_slices_almost_equal(regression.p_values(), &pvalues);
+        assert_slices_almost_equal(regression.residuals(), &residuals);
+        assert_eq!(regression.scale(), scale);
     }
 
     #[test]
@@ -1156,25 +1232,14 @@ mod tests {
             -0.6428571428571423,
             0.10714285714285765,
         ];
-        assert_almost_equal(regression.parameters.intercept_value, model_parameters[0]);
-        assert_almost_equal(
-            regression.parameters.regressor_values[0],
-            model_parameters[1],
-        );
-        assert_almost_equal(
-            regression.parameters.regressor_values[1],
-            model_parameters[2],
-        );
-        assert_almost_equal(regression.se.intercept_value, se[0]);
-        assert_slices_almost_equal(&regression.se.regressor_values, &se[1..]);
-        assert_almost_equal(regression.ssr, ssr);
-        assert_almost_equal(regression.rsquared, rsquared);
-        assert_almost_equal(regression.rsquared_adj, rsquared_adj);
-        assert_almost_equal(regression.pvalues.intercept_value, pvalues[0]);
-        assert_slices_almost_equal(&regression.pvalues.regressor_values, &pvalues[1..]);
-        assert_almost_equal(regression.residuals.intercept_value, residuals[0]);
-        assert_slices_almost_equal(&regression.residuals.regressor_values, &residuals[1..]);
-        assert_eq!(regression.scale, scale);
+        assert_slices_almost_equal(regression.parameters(), &model_parameters);
+        assert_slices_almost_equal(regression.se(), &se);
+        assert_almost_equal(regression.ssr(), ssr);
+        assert_almost_equal(regression.rsquared(), rsquared);
+        assert_almost_equal(regression.rsquared_adj(), rsquared_adj);
+        assert_slices_almost_equal(regression.p_values(), &pvalues);
+        assert_slices_almost_equal(regression.residuals(), &residuals);
+        assert_eq!(regression.scale(), scale);
     }
 
     #[test]
@@ -1214,14 +1279,14 @@ mod tests {
             -0.6428571428571423,
             0.10714285714285765,
         ];
-        assert_slices_almost_equal(&regression.parameters, &model_parameters);
-        assert_slices_almost_equal(&regression.se, &se);
-        assert_almost_equal(regression.ssr, ssr);
-        assert_almost_equal(regression.rsquared, rsquared);
-        assert_almost_equal(regression.rsquared_adj, rsquared_adj);
-        assert_slices_almost_equal(&regression.pvalues, &pvalues);
-        assert_slices_almost_equal(&regression.residuals, &residuals);
-        assert_eq!(regression.scale, scale);
+        assert_slices_almost_equal(regression.parameters(), &model_parameters);
+        assert_slices_almost_equal(regression.se(), &se);
+        assert_almost_equal(regression.ssr(), ssr);
+        assert_almost_equal(regression.rsquared(), rsquared);
+        assert_almost_equal(regression.rsquared_adj(), rsquared_adj);
+        assert_slices_almost_equal(regression.p_values(), &pvalues);
+        assert_slices_almost_equal(regression.residuals(), &residuals);
+        assert_eq!(regression.scale(), scale);
     }
 
     #[test]
@@ -1241,9 +1306,7 @@ mod tests {
             .fit_without_statistics()
             .expect("Fitting model failed");
         let model_parameters = vec![0.09523809523809523, 0.5059523809523809, 0.2559523809523808];
-        assert_almost_equal(regression.intercept_value, model_parameters[0]);
-        assert_almost_equal(regression.regressor_values[0], model_parameters[1]);
-        assert_almost_equal(regression.regressor_values[1], model_parameters[2]);
+        assert_slices_almost_equal(&regression, &model_parameters);
     }
 
     #[test]
@@ -1461,18 +1524,6 @@ mod tests {
             .into_iter()
             .map(|(x, y)| (Cow::from(x), y))
             .collect();
-        assert!(model.check_variables(&new_data).is_err());
-    }
-
-    #[test]
-    fn test_prediction_broken_model() {
-        let mut model = build_model();
-        model.parameters.regressor_values = vec![];
-        let new_data: HashMap<Cow<'_, _>, _> =
-            vec![("X1", vec![1.0]), ("X2", vec![2.0]), ("X3", vec![3.0])]
-                .into_iter()
-                .map(|(x, y)| (Cow::from(x), y))
-                .collect();
         assert!(model.check_variables(&new_data).is_err());
     }
 
