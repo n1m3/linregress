@@ -1127,7 +1127,7 @@ mod tests {
 
     fn assert_slices_almost_equal(a: &[f64], b: &[f64]) {
         assert_eq!(a.len(), b.len());
-        for (x, y) in a.iter().cloned().zip(b.iter().cloned()).collect::<Vec<_>>() {
+        for (&x, &y) in a.iter().zip(b.iter()) {
             assert_almost_equal(x, y);
         }
     }
