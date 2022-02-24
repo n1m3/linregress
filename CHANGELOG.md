@@ -1,4 +1,4 @@
-## master
+## 0.5.0-alpha.1
 - Rework API to remove `RegressionParameters` struct
     - `FormulaRegressionBuilder::fit_without_statistics` returns a `Vec`.
        The fields of `RegressionModel` and `LowLevelRegressionModel` are now private. Appropriate accessor methods have been added.
