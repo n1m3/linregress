@@ -1,7 +1,8 @@
 ## 0.5.0-alpha.1
 - Rework API to remove `RegressionParameters` struct
     - `FormulaRegressionBuilder::fit_without_statistics` returns a `Vec`.
-       The fields of `RegressionModel` and `LowLevelRegressionModel` are now private. Appropriate accessor methods have been added.
+    - The fields of `RegressionModel` and `LowLevelRegressionModel` are now private.
+    - Appropriate accessor methods have been added.
     - `RegressionParameters::pairs` has been replaced with `iter_` methods on `RegressionModel`.
 
 ## 0.4.4
