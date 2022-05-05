@@ -210,7 +210,6 @@ impl<'a> FormulaRegressionBuilder<'a> {
     /// statistics.
     ///
     /// [`fit`]: struct.FormulaRegressionBuilder.html#method.fit
-    /// [`RegressionParameters`]: struct.RegressionParameters.html
     pub fn fit_without_statistics(self) -> Result<Vec<f64>, Error> {
         let FittingData(input_vector, output_matrix, _output_names) =
             Self::get_matrices_and_regressor_names(self)?;
@@ -527,11 +526,6 @@ impl Default for InvalidValueHandling {
 ///
 /// Is the result of [`FormulaRegressionBuilder.fit()`].
 ///
-/// If a field has only one value for the model it is given as `f64`.
-///
-/// Otherwise it is given as a [`RegressionParameters`] struct.
-///
-///[`RegressionParameters`]: struct.RegressionParameters.html
 ///[`FormulaRegressionBuilder.fit()`]: struct.FormulaRegressionBuilder.html#method.fit
 #[derive(Debug, Clone)]
 pub struct RegressionModel {
@@ -811,9 +805,6 @@ impl RegressionModel {
 ///
 /// Is the result of [`fit_low_level_regression_model`].
 ///
-/// If a field has only one value for the model it is given as `f64`.
-///
-/// Otherwise it  is given as a `Vec<f64>` where the first value is the intercept value.
 #[derive(Debug, Clone)]
 pub struct LowLevelRegressionModel {
     /// The model's intercept and slopes (also known as betas).
