@@ -85,6 +85,64 @@ macro_rules! ensure {
     };
 }
 
+/// # Note
+///
+/// Only exposed for use in doc comments. This macro is not considered part of this crates stable API.
+#[macro_export]
+macro_rules! assert_almost_eq {
+    ($a:expr, $b:expr) => {
+        $crate::assert_almost_eq!($a, $b, 1.0E-14);
+    };
+    ($a:expr, $b:expr, $prec:expr) => {
+        if !$crate::almost_equal($a, $b, $prec) {
+            panic!("assert_almost_eq failed:\n{:?} vs\n{:?}", $a, $b);
+        }
+    };
+}
+
+/// # Note
+///
+/// Only exposed for use in doc comments. This macro is not considered part of this crates stable API.
+#[macro_export]
+macro_rules! assert_slices_almost_eq {
+    ($a:expr, $b:expr) => {
+        $crate::assert_slices_almost_eq!($a, $b, 1.0E-14);
+    };
+    ($a:expr, $b:expr, $prec:expr) => {
+        if !$crate::slices_almost_equal($a, $b, $prec) {
+            panic!("assert_slices_almost_eq failed:\n{:?} vs\n{:?}", $a, $b);
+        }
+    };
+}
+
+/// # Note
+///
+/// Only exposed for use in doc comments. This function is not considered part of this crates stable API.
+#[doc(hidden)]
+pub fn almost_equal(a: f64, b: f64, precision: f64) -> bool {
+    if a.is_infinite() || b.is_infinite() || a.is_nan() || b.is_nan() {
+        false
+    } else {
+        (a - b).abs() <= precision
+    }
+}
+
+/// # Note
+///
+/// Only exposed for use in doc comments. This function is not considered part of this crates stable API.
+#[doc(hidden)]
+pub fn slices_almost_equal(a: &[f64], b: &[f64], precision: f64) -> bool {
+    if a.len() != b.len() {
+        return false;
+    }
+    for (&x, &y) in a.iter().zip(b.iter()) {
+        if !almost_equal(x, y, precision) {
+            return false;
+        }
+    }
+    true
+}
+
 /// A builder to create and fit a linear regression model.
 ///
 /// Given a dataset and a set of columns to use this builder
@@ -1107,22 +1165,6 @@ fn get_sum_of_products(matrix: &DMatrix<f64>, vector: &RowDVector<f64>) -> DMatr
 #[cfg(test)]
 mod tests {
     use super::*;
-    fn assert_almost_equal(a: f64, b: f64) {
-        assert_almost_equal_with_precision(a, b, 1.0E-14);
-    }
-
-    fn assert_almost_equal_with_precision(a: f64, b: f64, precision: f64) {
-        if (a - b).abs() > precision {
-            panic!("\n{:?} vs\n{:?}", a, b);
-        }
-    }
-
-    fn assert_slices_almost_equal(a: &[f64], b: &[f64]) {
-        assert_eq!(a.len(), b.len());
-        for (&x, &y) in a.iter().zip(b.iter()) {
-            assert_almost_equal(x, y);
-        }
-    }
 
     #[test]
     fn test_pinv_with_formula_builder() {
@@ -1165,14 +1207,14 @@ mod tests {
             -0.6428571428571423,
             0.10714285714285765,
         ];
-        assert_slices_almost_equal(regression.parameters(), &model_parameters);
-        assert_slices_almost_equal(regression.se(), &se);
-        assert_almost_equal(regression.ssr(), ssr);
-        assert_almost_equal(regression.rsquared(), rsquared);
-        assert_almost_equal(regression.rsquared_adj(), rsquared_adj);
-        assert_slices_almost_equal(regression.p_values(), &pvalues);
-        assert_slices_almost_equal(regression.residuals(), &residuals);
-        assert_almost_equal(regression.scale(), scale);
+        assert_slices_almost_eq!(regression.parameters(), &model_parameters);
+        assert_slices_almost_eq!(regression.se(), &se);
+        assert_almost_eq!(regression.ssr(), ssr);
+        assert_almost_eq!(regression.rsquared(), rsquared);
+        assert_almost_eq!(regression.rsquared_adj(), rsquared_adj);
+        assert_slices_almost_eq!(regression.p_values(), &pvalues);
+        assert_slices_almost_eq!(regression.residuals(), &residuals);
+        assert_almost_eq!(regression.scale(), scale);
     }
 
     #[test]
@@ -1216,14 +1258,14 @@ mod tests {
             -0.6428571428571423,
             0.10714285714285765,
         ];
-        assert_slices_almost_equal(regression.parameters(), &model_parameters);
-        assert_slices_almost_equal(regression.se(), &se);
-        assert_almost_equal(regression.ssr(), ssr);
-        assert_almost_equal(regression.rsquared(), rsquared);
-        assert_almost_equal(regression.rsquared_adj(), rsquared_adj);
-        assert_slices_almost_equal(regression.p_values(), &pvalues);
-        assert_slices_almost_equal(regression.residuals(), &residuals);
-        assert_almost_equal(regression.scale(), scale);
+        assert_slices_almost_eq!(regression.parameters(), &model_parameters);
+        assert_slices_almost_eq!(regression.se(), &se);
+        assert_almost_eq!(regression.ssr(), ssr);
+        assert_almost_eq!(regression.rsquared(), rsquared);
+        assert_almost_eq!(regression.rsquared_adj(), rsquared_adj);
+        assert_slices_almost_eq!(regression.p_values(), &pvalues);
+        assert_slices_almost_eq!(regression.residuals(), &residuals);
+        assert_almost_eq!(regression.scale(), scale);
     }
 
     #[test]
@@ -1263,14 +1305,14 @@ mod tests {
             -0.6428571428571423,
             0.10714285714285765,
         ];
-        assert_slices_almost_equal(regression.parameters(), &model_parameters);
-        assert_slices_almost_equal(regression.se(), &se);
-        assert_almost_equal(regression.ssr(), ssr);
-        assert_almost_equal(regression.rsquared(), rsquared);
-        assert_almost_equal(regression.rsquared_adj(), rsquared_adj);
-        assert_slices_almost_equal(regression.p_values(), &pvalues);
-        assert_slices_almost_equal(regression.residuals(), &residuals);
-        assert_almost_equal(regression.scale(), scale);
+        assert_slices_almost_eq!(regression.parameters(), &model_parameters);
+        assert_slices_almost_eq!(regression.se(), &se);
+        assert_almost_eq!(regression.ssr(), ssr);
+        assert_almost_eq!(regression.rsquared(), rsquared);
+        assert_almost_eq!(regression.rsquared_adj(), rsquared_adj);
+        assert_slices_almost_eq!(regression.p_values(), &pvalues);
+        assert_slices_almost_eq!(regression.residuals(), &residuals);
+        assert_almost_eq!(regression.scale(), scale);
     }
 
     #[test]
@@ -1290,7 +1332,7 @@ mod tests {
             .fit_without_statistics()
             .expect("Fitting model failed");
         let model_parameters = vec![0.09523809523809523, 0.5059523809523809, 0.2559523809523808];
-        assert_slices_almost_equal(&regression, &model_parameters);
+        assert_slices_almost_eq!(&regression, &model_parameters);
     }
 
     #[test]
@@ -1517,7 +1559,7 @@ mod tests {
         let new_data = vec![("X1", vec![2.5]), ("X2", vec![2.0]), ("X3", vec![2.0])];
         let prediction = model.predict(new_data).unwrap();
         assert_eq!(prediction.len(), 1);
-        assert_almost_equal_with_precision(prediction[0], 3.500000000000111, 1.0E-7);
+        assert_almost_eq!(prediction[0], 3.500000000000111, 1.0E-7);
     }
 
     #[test]
@@ -1530,8 +1572,8 @@ mod tests {
         ];
         let prediction = model.predict(new_data).unwrap();
         assert_eq!(prediction.len(), 2);
-        assert_almost_equal_with_precision(prediction[0], 3.500000000000111, 1.0E-7);
-        assert_almost_equal_with_precision(prediction[1], 2.5000000000001337, 1.0E-7);
+        assert_almost_eq!(prediction[0], 3.500000000000111, 1.0E-7);
+        assert_almost_eq!(prediction[1], 2.5000000000001337, 1.0E-7);
     }
 
     #[test]
@@ -1544,8 +1586,8 @@ mod tests {
         ];
         let prediction = model.predict(new_data).unwrap();
         assert_eq!(prediction.len(), 2);
-        assert_almost_equal_with_precision(prediction[0], 3.500000000000111, 1.0E-7);
-        assert_almost_equal_with_precision(prediction[1], 2.5000000000001337, 1.0E-7);
+        assert_almost_eq!(prediction[0], 3.500000000000111, 1.0E-7);
+        assert_almost_eq!(prediction[1], 2.5000000000001337, 1.0E-7);
     }
 }
 
