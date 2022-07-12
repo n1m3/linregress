@@ -3,8 +3,10 @@
 
 // Yes clippy this stuff looks like a computer science text book ໒( ݓ Ĺ̯ ݓ )७
 #![allow(clippy::many_single_char_names)]
-use statrs::function::beta::{beta, ln_beta};
+
 use std::mem::swap;
+
+use crate::stats::{checked_beta, checked_ln_beta};
 
 const MAX_GAMMA: f64 = 171.624_376_956_302_7;
 const MIN_LOG: f64 = -708.396_418_532_264_1; // log(2**-1022)
@@ -122,9 +124,9 @@ pub fn inc_beta(a: f64, b: f64, x: f64) -> f64 {
         t *= x.powf(a);
         t /= a;
         t *= w;
-        t *= 1.0 / beta(a, b);
+        t *= 1.0 / checked_beta(a, b).unwrap();
     } else {
-        y += t - ln_beta(a, b);
+        y += t - checked_ln_beta(a, b).unwrap();
         y += (w / a).ln();
         if y < MIN_LOG {
             t = 0.;
@@ -164,10 +166,10 @@ fn pseries(a: f64, b: f64, x: f64) -> f64 {
     s += a_inverse;
     u = a * x.ln();
     if (a + b) < MAX_GAMMA && u.abs() < MAX_LOG {
-        t = 1.0 / beta(a, b);
+        t = 1.0 / checked_beta(a, b).unwrap();
         s = s * t * x.powf(a);
     } else {
-        t = -ln_beta(a, b) + u + s.ln();
+        t = -checked_ln_beta(a, b).unwrap() + u + s.ln();
         if t < MIN_LOG {
             s = 0.0;
         } else {

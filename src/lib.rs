@@ -75,6 +75,7 @@ use special_functions::stdtr;
 
 mod error;
 mod special_functions;
+mod stats;
 
 macro_rules! ensure {
     ($predicate:expr, $error:expr) => {
