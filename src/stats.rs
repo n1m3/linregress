@@ -5,6 +5,9 @@ use std::f64;
 
 use crate::ulps_eq;
 
+#[cfg(test)]
+mod tests;
+
 // ln(pi)
 const LN_PI: f64 = 1.144_729_885_849_400_2;
 // ln(2 * sqrt(e / pi))
