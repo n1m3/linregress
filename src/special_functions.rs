@@ -1,3 +1,6 @@
+// The code below is based on the C implementation in the Cephes library.
+// See LICENSE-THIRD-PARTY for details.
+
 // Yes clippy this stuff looks like a computer science text book ໒( ݓ Ĺ̯ ݓ )७
 #![allow(clippy::many_single_char_names)]
 use statrs::function::beta::{beta, ln_beta};
