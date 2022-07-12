@@ -70,11 +70,10 @@ use std::iter;
 
 use nalgebra::{DMatrix, DVector, RowDVector};
 
-pub use error::{Error, InconsistentSlopes};
-use special_functions::stdtr;
+pub use crate::error::{Error, InconsistentSlopes};
+use crate::stats::students_t_cdf;
 
 mod error;
-mod special_functions;
 mod stats;
 
 macro_rules! ensure {
@@ -141,6 +140,24 @@ pub fn slices_almost_equal(a: &[f64], b: &[f64], precision: f64) -> bool {
         }
     }
     true
+}
+
+/// Compares `a` and `b` approximately.
+///
+/// They are considered equal if
+/// `(a-b).abs() <= epsilon` or they differ my at most `max_ulps`
+/// `unit of least precision` i.e. there are at most `max_ulps`
+/// other representable floating point numbers between `a` and `b`
+fn ulps_eq(a: f64, b: f64, epsilon: f64, max_ulps: u32) -> bool {
+    if (a - b).abs() <= epsilon {
+        return true;
+    }
+    if a.signum() != b.signum() {
+        return false;
+    }
+    let a: u64 = a.to_bits();
+    let b: u64 = b.to_bits();
+    a.abs_diff(b) <= max_ulps as u64
 }
 
 /// A builder to create and fit a linear regression model.
@@ -921,8 +938,14 @@ impl LowLevelRegressionModel {
         let pvalues: Vec<_> = tvalues
             .iter()
             .cloned()
-            .map(|x| stdtr(df_resid as i64, -(x.abs())) * 2.)
-            .collect();
+            .map(|x| students_t_cdf(-(x.abs()), df_resid as i64).map(|i| i * 2.))
+            .collect::<Option<_>>()
+            .ok_or_else(|| {
+                Error::ModelFittingError(
+                    "Failed to calculate p-values: students_t_cdf failed due to invalid parameters"
+                        .into(),
+                )
+            })?;
         // Convert these from interal Matrix types to user facing types
         let parameters: Vec<f64> = parameters.iter().copied().collect();
         let se: Vec<f64> = se.iter().copied().collect();
