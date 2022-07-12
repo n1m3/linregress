@@ -48,9 +48,9 @@
   assert_eq!(
       pvalues,
       vec![
-          ("X1", 6.23827978869154e-13),
+          ("X1", 6.238279788691533e-13),
           ("X2", 0.7815975465725482),
-          ("X3", 0.6922074604135646),
+          ("X3", 0.6922074604135647),
       ]
   );
   # Ok(())
@@ -642,8 +642,8 @@ impl RegressionModel {
     /// let data = RegressionDataBuilder::new().build_from(data)?;
     /// let model = FormulaRegressionBuilder::new().data(&data).formula("Y ~ X1 + X2").fit()?;
     /// let pairs: Vec<(&str, f64)> = model.iter_p_value_pairs().collect();
-    /// assert_eq!(pairs[0], ("X1", 1.705270758054946e-28));
-    /// assert_eq!(pairs[1], ("X2", 2.5225898787795134e-31));
+    /// assert_eq!(pairs[0], ("X1", 1.7052707580549508e-28));
+    /// assert_eq!(pairs[1], ("X2", 2.522589878779506e-31));
     /// # Ok(())
     /// # }
     /// ```
