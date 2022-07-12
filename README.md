@@ -17,7 +17,9 @@ This project is licensed under the MIT License.
 See LICENSE-MIT for details.
 
 ### Third party software
-The special functions module contains functions that are based on the
+- The special functions module contains functions that are based on the
 C implementation in the [Cephes library](http://www.netlib.org/cephes/).
-They are considered a derivative of the Cephes library that is compatibly licensed.
-See LICENSE-THIRD-PARTY for details.
+  They are considered a derivative of the Cephes library that is compatibly licensed.
+- The stats module contains code adapted from the [statrs library](https://github.com/statrs-dev/statrs/),
+  that is compatibly licensed.
+- See LICENSE-THIRD-PARTY for details.
