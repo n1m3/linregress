@@ -155,7 +155,7 @@ pub fn slices_almost_equal(a: &[f64], b: &[f64], precision: f64) -> bool {
 /// # Usage
 ///
 /// ```
-/// use linregress::{FormulaRegressionBuilder, RegressionDataBuilder};
+/// use linregress::{FormulaRegressionBuilder, RegressionDataBuilder, assert_almost_eq};
 ///
 /// # use linregress::Error;
 /// # fn main() -> Result<(), Error> {
@@ -167,8 +167,8 @@ pub fn slices_almost_equal(a: &[f64], b: &[f64], precision: f64) -> bool {
 /// // Alternatively
 /// let model = FormulaRegressionBuilder::new().data(&data).data_columns("Y", ["X"]).fit()?;
 /// let params = model.parameters();
-/// assert_eq!(params[0], 4.999999999999998);
-/// assert_eq!(params[1], -0.9999999999999989);
+/// assert_almost_eq!(params[0], 4.999999999999998);
+/// assert_almost_eq!(params[1], -0.9999999999999989);
 /// assert_eq!(model.regressor_names()[0], "X");
 /// # Ok(())
 /// # }
@@ -761,7 +761,7 @@ impl RegressionModel {
     /// ## Example
     ///
     /// ```
-    /// # use linregress::{RegressionDataBuilder, FormulaRegressionBuilder};
+    /// # use linregress::{RegressionDataBuilder, FormulaRegressionBuilder, assert_slices_almost_eq};
     /// # use linregress::Error;
     /// # fn main() -> Result<(), Error> {
     /// let y = vec![1., 2., 3., 4., 5.];
@@ -781,7 +781,7 @@ impl RegressionModel {
     ///     ("X3", vec![2.0, 1.0]),
     /// ];
     /// let prediction: Vec<f64> = model.predict(new_data)?;
-    /// assert_eq!(prediction, vec![3.500000000000028, 2.5000000000000644]);
+    /// assert_slices_almost_eq!(&prediction, &[3.500000000000028, 2.5000000000000644]);
     /// # Ok(())
     /// # }
     /// ```
@@ -1009,7 +1009,7 @@ impl LowLevelRegressionModel {
 /// # Example
 /// ```
 /// # fn main() -> Result<(), linregress::Error> {
-/// use linregress::fit_low_level_regression_model;
+/// use linregress::{fit_low_level_regression_model, assert_slices_almost_eq};
 ///
 /// let data_row_major: Vec<f64> = vec![
 ///     1., 1.0, 1., 7.,
@@ -1026,7 +1026,7 @@ impl LowLevelRegressionModel {
 ///     0.5059523809523807,
 ///     0.2559523809523811,
 /// ];
-/// assert_eq!(model.parameters(), &params);
+/// assert_slices_almost_eq!(model.parameters(), &params);
 /// # Ok(())
 /// # }
 /// ```
