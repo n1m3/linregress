@@ -86,9 +86,7 @@ macro_rules! ensure {
     };
 }
 
-/// # Note
-///
-/// Only exposed for use in doc comments. This macro is not considered part of this crates stable API.
+/// Only exposed for use in doc comments. This macro is not considered part of this crate's stable API.
 #[macro_export]
 macro_rules! assert_almost_eq {
     ($a:expr, $b:expr) => {
@@ -101,9 +99,7 @@ macro_rules! assert_almost_eq {
     };
 }
 
-/// # Note
-///
-/// Only exposed for use in doc comments. This macro is not considered part of this crates stable API.
+/// Only exposed for use in doc comments. This macro is not considered part of this crate's stable API.
 #[macro_export]
 macro_rules! assert_slices_almost_eq {
     ($a:expr, $b:expr) => {
@@ -116,9 +112,7 @@ macro_rules! assert_slices_almost_eq {
     };
 }
 
-/// # Note
-///
-/// Only exposed for use in doc comments. This function is not considered part of this crates stable API.
+/// Only exposed for use in doc comments. This function is not considered part of this crate's stable API.
 #[doc(hidden)]
 pub fn almost_equal(a: f64, b: f64, precision: f64) -> bool {
     if a.is_infinite() || b.is_infinite() || a.is_nan() || b.is_nan() {
@@ -128,9 +122,7 @@ pub fn almost_equal(a: f64, b: f64, precision: f64) -> bool {
     }
 }
 
-/// # Note
-///
-/// Only exposed for use in doc comments. This function is not considered part of this crates stable API.
+/// Only exposed for use in doc comments. This function is not considered part of this crate's stable API.
 #[doc(hidden)]
 pub fn slices_almost_equal(a: &[f64], b: &[f64], precision: f64) -> bool {
     if a.len() != b.len() {
