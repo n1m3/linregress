@@ -15,10 +15,5 @@ exclude = ["*.sh"]
 [dependencies]
 nalgebra = "0.31.0"
 
-[dev-dependencies]
-quickcheck = "0.8.2"
-quickcheck_macros = "0.8.0"
-stdtr = "0.2.0"
-
 [features]
 unstable = []
