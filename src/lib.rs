@@ -33,24 +33,24 @@
       parameters,
       vec![
           ("X1", -0.9999999999999745),
-          ("X2", 0.00000000000000005637851296924623),
-          ("X3", 0.00000000000000008283304597789254),
+          ("X2", 1.5872719805187785e-15),
+          ("X3", -1.4246416546459528e-15),
       ]
   );
   assert_eq!(
       standard_errors,
       vec![
-          ("X1", 0.00000000000019226371555402852),
-          ("X2", 0.0000000000000008718958950659518),
-          ("X3", 0.0000000000000005323837152041135),
+          ("X1", 9.799066977595267e-13),
+          ("X2", 4.443774660560714e-15),
+          ("X3", 2.713389610740135e-15),
       ]
   );
   assert_eq!(
       pvalues,
       vec![
-          ("X1", 0.00000000000012239888283055414),
-          ("X2", 0.9588921357097694),
-          ("X3", 0.9017368322742073),
+          ("X1", 6.23827978869154e-13),
+          ("X2", 0.7815975465725482),
+          ("X3", 0.6922074604135646),
       ]
   );
   # Ok(())
@@ -567,8 +567,8 @@ impl RegressionModel {
     /// let data = RegressionDataBuilder::new().build_from(data)?;
     /// let model = FormulaRegressionBuilder::new().data(&data).formula("Y ~ X1 + X2").fit()?;
     /// let pairs: Vec<(&str, f64)> = model.iter_p_value_pairs().collect();
-    /// assert_eq!(pairs[0], ("X1", 2.2105361678489907e-29));
-    /// assert_eq!(pairs[1], ("X2", 3.270023916936405e-32));
+    /// assert_eq!(pairs[0], ("X1", 1.705270758054946e-28));
+    /// assert_eq!(pairs[1], ("X2", 2.5225898787795134e-31));
     /// # Ok(())
     /// # }
     /// ```
@@ -612,8 +612,8 @@ impl RegressionModel {
     /// let data = RegressionDataBuilder::new().build_from(data)?;
     /// let model = FormulaRegressionBuilder::new().data(&data).formula("Y ~ X1 + X2").fit()?;
     /// let pairs: Vec<(&str, f64)> = model.iter_parameter_pairs().collect();
-    /// assert_eq!(pairs[0], ("X1", -0.0370370370370372));
-    /// assert_eq!(pairs[1], ("X2", 0.9629629629629629));
+    /// assert_eq!(pairs[0], ("X1", -0.03703703703703709));
+    /// assert_eq!(pairs[1], ("X2", 0.9629629629629626));
     /// # Ok(())
     /// # }
     /// ```
@@ -651,8 +651,8 @@ impl RegressionModel {
     /// let data = RegressionDataBuilder::new().build_from(data)?;
     /// let model = FormulaRegressionBuilder::new().data(&data).formula("Y ~ X1 + X2").fit()?;
     /// let pairs: Vec<(&str, f64)> = model.iter_parameter_pairs().collect();
-    /// assert_eq!(pairs[0], ("X1", -0.0370370370370372));
-    /// assert_eq!(pairs[1], ("X2", 0.9629629629629629));
+    /// assert_eq!(pairs[0], ("X1", -0.03703703703703709));
+    /// assert_eq!(pairs[1], ("X2", 0.9629629629629626));
     /// # Ok(())
     /// # }
     /// ```
@@ -723,7 +723,7 @@ impl RegressionModel {
     ///     ("X3", vec![2.0, 1.0]),
     /// ];
     /// let prediction: Vec<f64> = model.predict(new_data)?;
-    /// assert_eq!(prediction, vec![3.5000000000000275, 2.5000000000000533]);
+    /// assert_eq!(prediction, vec![3.500000000000028, 2.5000000000000644]);
     /// # Ok(())
     /// # }
     /// ```
@@ -964,9 +964,9 @@ impl LowLevelRegressionModel {
 /// ];
 /// let model = fit_low_level_regression_model(&data_row_major, 7, 4)?;
 /// let params = [
-///     0.09523809523809511f64,
-///     0.5059523809523809,
-///     0.25595238095238104,
+///     0.09523809523809518f64,
+///     0.5059523809523807,
+///     0.2559523809523811,
 /// ];
 /// assert_eq!(model.parameters(), &params);
 /// # Ok(())
@@ -1172,7 +1172,7 @@ mod tests {
         assert_almost_equal(regression.rsquared_adj(), rsquared_adj);
         assert_slices_almost_equal(regression.p_values(), &pvalues);
         assert_slices_almost_equal(regression.residuals(), &residuals);
-        assert_eq!(regression.scale(), scale);
+        assert_almost_equal(regression.scale(), scale);
     }
 
     #[test]
@@ -1223,7 +1223,7 @@ mod tests {
         assert_almost_equal(regression.rsquared_adj(), rsquared_adj);
         assert_slices_almost_equal(regression.p_values(), &pvalues);
         assert_slices_almost_equal(regression.residuals(), &residuals);
-        assert_eq!(regression.scale(), scale);
+        assert_almost_equal(regression.scale(), scale);
     }
 
     #[test]
@@ -1270,7 +1270,7 @@ mod tests {
         assert_almost_equal(regression.rsquared_adj(), rsquared_adj);
         assert_slices_almost_equal(regression.p_values(), &pvalues);
         assert_slices_almost_equal(regression.residuals(), &residuals);
-        assert_eq!(regression.scale(), scale);
+        assert_almost_equal(regression.scale(), scale);
     }
 
     #[test]
