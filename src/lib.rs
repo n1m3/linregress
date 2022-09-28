@@ -67,6 +67,7 @@
 use std::borrow::Cow;
 use std::collections::{BTreeSet, HashMap, HashSet};
 use std::iter;
+use std::ops::Neg;
 
 use nalgebra::{DMatrix, DVector, RowDVector};
 
@@ -139,8 +140,8 @@ pub fn slices_almost_equal(a: &[f64], b: &[f64], precision: f64) -> bool {
 /// Compares `a` and `b` approximately.
 ///
 /// They are considered equal if
-/// `(a-b).abs() <= epsilon` or they differ my at most `max_ulps`
-/// `unit of least precision` i.e. there are at most `max_ulps`
+/// `(a-b).abs() <= epsilon` or they differ by at most `max_ulps`
+/// `units of least precision` i.e. there are at most `max_ulps`
 /// other representable floating point numbers between `a` and `b`
 fn ulps_eq(a: f64, b: f64, epsilon: f64, max_ulps: u32) -> bool {
     if (a - b).abs() <= epsilon {
@@ -921,18 +922,17 @@ impl LowLevelRegressionModel {
         let cov_params = normalized_cov_params * scale;
         let se = get_se_from_cov_params(&cov_params)?;
         let centered_input_matrix = subtract_value_from_matrix(&input_matrix, input_matrix.mean());
-        let centered_tss = &centered_input_matrix.dot(&centered_input_matrix);
+        let centered_tss = centered_input_matrix.dot(&centered_input_matrix);
         let rsquared = 1. - (ssr / centered_tss);
         let rsquared_adj = 1. - ((n - 1) as f64 / df_resid as f64 * (1. - rsquared));
-        let tvalues: Vec<_> = parameters
+        let tvalues: Vec<f64> = parameters
             .iter()
             .zip(se.iter())
             .map(|(x, y)| x / y)
             .collect();
-        let pvalues: Vec<_> = tvalues
+        let pvalues: Vec<f64> = tvalues
             .iter()
-            .cloned()
-            .map(|x| students_t_cdf(-(x.abs()), df_resid as i64).map(|i| i * 2.))
+            .map(|x| students_t_cdf(x.abs().neg(), df_resid as i64).map(|i| i * 2.))
             .collect::<Option<_>>()
             .ok_or_else(|| {
                 Error::ModelFittingError(
@@ -940,7 +940,7 @@ impl LowLevelRegressionModel {
                         .into(),
                 )
             })?;
-        // Convert these from interal Matrix types to user facing types
+        // Convert these from internal Matrix types to user facing types
         let parameters: Vec<f64> = parameters.iter().copied().collect();
         let se: Vec<f64> = se.iter().copied().collect();
         let residuals: Vec<f64> = residuals.iter().copied().collect();

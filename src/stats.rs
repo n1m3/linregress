@@ -74,9 +74,7 @@ pub fn students_t_cdf(x: f64, freedom: i64) -> Option<f64> {
 /// `b` is the second beta parameter, and `x` is the upper limit of the
 /// integral.
 ///
-/// # Errors
-///
-/// if `a <= 0.0`, `b <= 0.0`, `x < 0.0`, or `x > 1.0`
+/// Returns `None` if `a <= 0.0`, `b <= 0.0`, `x < 0.0`, or `x > 1.0`
 fn checked_beta_reg(a: f64, b: f64, x: f64) -> Option<f64> {
     if a <= 0. || b <= 0. || !(0.0..=1.).contains(&x) {
         return None;
