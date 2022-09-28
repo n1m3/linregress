@@ -918,18 +918,15 @@ impl LowLevelRegressionModel {
                 "There are not enough residual degrees of freedom to perform statistics on this model".into()));
         let scale = residuals.dot(&residuals) / df_resid as f64;
         let cov_params = normalized_cov_params * scale;
-        let se = get_se_from_cov_params(&cov_params)?;
-        let centered_input_matrix = subtract_value_from_matrix(&input_matrix, input_matrix.mean());
+        let se = get_se_from_cov_params(&cov_params);
+        let mean = input_matrix.mean();
+        let mut centered_input_matrix = input_matrix;
+        subtract_value_from_matrix(&mut centered_input_matrix, mean);
         let centered_tss = centered_input_matrix.dot(&centered_input_matrix);
         let rsquared = 1. - (ssr / centered_tss);
         let rsquared_adj = 1. - ((n - 1) as f64 / df_resid as f64 * (1. - rsquared));
-        let tvalues: Vec<f64> = parameters
-            .iter()
-            .zip(se.iter())
-            .map(|(x, y)| x / y)
-            .collect();
+        let tvalues = parameters.iter().zip(se.iter()).map(|(x, y)| x / y);
         let pvalues: Vec<f64> = tvalues
-            .iter()
             .map(|x| students_t_cdf(x.abs().neg(), df_resid as i64).map(|i| i * 2.))
             .collect::<Option<_>>()
             .ok_or_else(|| {
@@ -940,7 +937,6 @@ impl LowLevelRegressionModel {
             })?;
         // Convert these from internal Matrix types to user facing types
         let parameters: Vec<f64> = parameters.iter().copied().collect();
-        let se: Vec<f64> = se.iter().copied().collect();
         let residuals: Vec<f64> = residuals.iter().copied().collect();
         Ok(Self {
             parameters,
@@ -1141,38 +1137,27 @@ fn fit_ols_pinv(
     })
 }
 
-/// Subtracts `value` from all fields in `matrix` and returns the resulting new matrix.
-fn subtract_value_from_matrix(matrix: &DMatrix<f64>, value: f64) -> DMatrix<f64> {
-    let nrows = matrix.nrows();
-    let ncols = matrix.ncols();
-    let substraction_matrix: DMatrix<f64> =
-        DMatrix::from_iterator(nrows, ncols, std::iter::repeat(value).take(nrows * ncols));
-    matrix - substraction_matrix
+fn subtract_value_from_matrix(matrix: &mut DMatrix<f64>, sub: f64) {
+    for i in matrix.iter_mut() {
+        *i -= sub;
+    }
 }
 
 /// Calculates the standard errors given a model's covariate parameters
-fn get_se_from_cov_params(matrix: &DMatrix<f64>) -> Result<DMatrix<f64>, Error> {
-    let mut v = Vec::new();
-    for row_index in 0..matrix.ncols() {
-        let row = matrix.row(row_index);
-        ensure!(
-            row_index <= row.len(),
-            Error::ModelFittingError("Matrix is not square".into())
-        );
-        v.push(row[row_index].sqrt());
-    }
-    Ok(DMatrix::from_vec(matrix.ncols(), 1, v))
+fn get_se_from_cov_params(matrix: &DMatrix<f64>) -> Vec<f64> {
+    matrix
+        .row_iter()
+        .enumerate()
+        .map(|(n, row)| row.get(n).expect("BUG: Matrix is not square").sqrt())
+        .collect()
 }
 
 fn get_sum_of_products(matrix: &DMatrix<f64>, vector: &RowDVector<f64>) -> DMatrix<f64> {
-    let mut v: Vec<f64> = Vec::new();
-    for row_index in 0..matrix.nrows() {
-        let row = matrix.row(row_index);
-        let mut sum = 0.;
-        for (x, y) in row.iter().zip(vector.iter()) {
-            sum += x * y;
-        }
-        v.push(sum);
-    }
-    DMatrix::from_vec(matrix.nrows(), 1, v)
+    DMatrix::from_iterator(
+        matrix.nrows(),
+        1,
+        matrix
+            .row_iter()
+            .map(|row| row.iter().zip(vector.iter()).map(|(x, y)| x * y).sum()),
+    )
 }
