@@ -62,8 +62,6 @@
   [`FormulaRegressionBuilder.formula`]: struct.FormulaRegressionBuilder.html#method.formula
 */
 
-#![warn(rust_2018_idioms)]
-#![cfg_attr(feature = "unstable", feature(test))]
 use std::borrow::Cow;
 use std::collections::{BTreeSet, HashMap, HashSet};
 use std::iter;
