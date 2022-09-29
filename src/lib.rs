@@ -67,7 +67,7 @@ use std::collections::{BTreeSet, HashMap, HashSet};
 use std::iter;
 use std::ops::Neg;
 
-use nalgebra::{DMatrix, DVector, RowDVector};
+use nalgebra::{DMatrix, DVector};
 
 pub use crate::error::{Error, InconsistentSlopes};
 use crate::stats::students_t_cdf;
@@ -290,10 +290,10 @@ impl<'a> FormulaRegressionBuilder<'a> {
     fn get_matrices_and_regressor_names(self) -> Result<FittingData, Error> {
         let (input, outputs) = self.get_data_columns()?;
         let data = &self.data.ok_or(Error::NoData)?.data;
-        let input_vector = data
-            .get(input.as_ref())
+        let input_vector: Vec<f64> = data
+            .get(&input)
+            .cloned()
             .ok_or_else(|| Error::ColumnNotInData(input.into()))?;
-        let input_vector = RowDVector::from_vec(input_vector.to_vec());
         let mut output_matrix = Vec::new();
         // Add column of all ones as the first column of the matrix
         let all_ones_column = iter::repeat(1.).take(input_vector.len());
@@ -343,7 +343,7 @@ impl<'a> FormulaRegressionBuilder<'a> {
 
 /// A simple tuple struct to reduce the type complxity of the
 /// return type of get_matrices_and_regressor_names.
-struct FittingData(RowDVector<f64>, DMatrix<f64>, Vec<String>);
+struct FittingData(Vec<f64>, DMatrix<f64>, Vec<String>);
 
 /// A container struct for the regression data.
 ///
@@ -851,7 +851,7 @@ impl RegressionModel {
     }
 
     fn try_from_matrices_and_regressor_names<I: IntoIterator<Item = String>>(
-        inputs: RowDVector<f64>,
+        inputs: Vec<f64>,
         outputs: DMatrix<f64>,
         output_names: I,
     ) -> Result<Self, Error> {
@@ -910,7 +910,7 @@ impl LowLevelRegressionModel {
         let input_matrix = DMatrix::from_vec(low_level_result.inputs.len(), 1, input_vec);
         let residuals = &input_matrix - (low_level_result.outputs * parameters.to_owned());
         let ssr = residuals.dot(&residuals);
-        let n = low_level_result.inputs.ncols();
+        let n = low_level_result.inputs.len();
         let df_resid = n - rank;
         ensure!(
             df_resid >= 1,
@@ -1075,7 +1075,7 @@ fn get_low_level_regression(
     );
     let data = DMatrix::from_row_slice(num_rows, num_columns, data_row_major);
     let inputs = data.slice((0, 0), (num_rows, 1));
-    let inputs: RowDVector<f64> = RowDVector::from_iterator(num_rows, inputs.iter().copied());
+    let inputs: Vec<f64> = inputs.iter().copied().collect();
     let outputs: DMatrix<f64> = data.slice((0, 1), (num_rows, num_columns - 1)).into_owned();
     fit_ols_pinv(inputs, outputs)
 }
@@ -1083,7 +1083,7 @@ fn get_low_level_regression(
 /// Result of fitting a low level matrix based model
 #[derive(Debug, Clone)]
 struct InternalLowLevelRegressionResult {
-    inputs: RowDVector<f64>,
+    inputs: Vec<f64>,
     outputs: DMatrix<f64>,
     params: DMatrix<f64>,
     singular_values: DVector<f64>,
@@ -1094,7 +1094,7 @@ struct InternalLowLevelRegressionResult {
 ///
 /// Returns a tuple `LowLevelRegressionResult`
 fn fit_ols_pinv(
-    inputs: RowDVector<f64>,
+    inputs: Vec<f64>,
     outputs: DMatrix<f64>,
 ) -> Result<InternalLowLevelRegressionResult, Error> {
     ensure!(
@@ -1152,7 +1152,7 @@ fn get_se_from_cov_params(matrix: &DMatrix<f64>) -> Vec<f64> {
         .collect()
 }
 
-fn get_sum_of_products(matrix: &DMatrix<f64>, vector: &RowDVector<f64>) -> DMatrix<f64> {
+fn get_sum_of_products(matrix: &DMatrix<f64>, vector: &[f64]) -> DMatrix<f64> {
     DMatrix::from_iterator(
         matrix.nrows(),
         1,
