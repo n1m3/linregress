@@ -13,7 +13,7 @@ license = "MIT"
 exclude = ["*.sh"]
 
 [dependencies]
-nalgebra = "0.31.0"
+nalgebra = "0.31.3"
 
 [dev-dependencies]
 criterion = { version = "0.3.6", features = ["html_reports"] }

@@ -11,6 +11,11 @@ who = "Nils Mehrtens"
 criteria = "safe-to-deploy"
 delta = "1.12.1 -> 1.12.2"
 
+[[audits.nalgebra]]
+who = "Nils Mehrtens"
+criteria = "safe-to-deploy"
+delta = "0.31.0 -> 0.31.3"
+
 [[audits.num-complex]]
 who = "Nils Mehrtens"
 criteria = "safe-to-deploy"
