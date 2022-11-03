@@ -1,3 +1,8 @@
+## master
+### Changed
+- Update `nalgebra` to version 0.31.3
+- Optimize various calculations (see [ef94ca0](https://github.com/n1m3/linregress/commit/ef94ca07ededb5d551309d581555778f71bf5136))
+
 ## 0.5.0
 ### Changed
 - Update `nalgebra` to `0.31.0`
@@ -20,7 +25,7 @@
 ## 0.4.4
 ### Added
 - Add `data_columns` method to `FormulaRegressionBuilder`
-  It allows setting the regressand a regressors without using a formula string
+  It allows setting the regressand a regressors without using a formula string.
 - Add `fit_low_level_regression_model` and `fit_low_level_regression_model_without_statistics`
   functions for performing a regression directly on a matrix of input data
 
