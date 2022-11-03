@@ -1090,9 +1090,7 @@ struct InternalLowLevelRegressionResult {
     normalized_cov_params: DMatrix<f64>,
 }
 
-/// Performs ordinary least squared linear regression using the pseudo inverse method.
-///
-/// Returns a tuple `LowLevelRegressionResult`
+/// Performs ordinary least squared linear regression using the pseudo inverse method
 fn fit_ols_pinv(
     inputs: Vec<f64>,
     outputs: DMatrix<f64>,
@@ -1114,7 +1112,7 @@ fn fit_ols_pinv(
         .try_svd(false, false, std::f64::EPSILON, 0)
         .ok_or_else(|| {
             Error::ModelFittingError(
-                "computing the singular-value decomposition of the output matrix failed".into(),
+                "Computing the singular-value decomposition of the output matrix failed".into(),
             )
         })?
         .singular_values;
