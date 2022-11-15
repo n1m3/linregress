@@ -906,7 +906,7 @@ impl LowLevelRegressionModel {
         let normalized_cov_params = low_level_result.normalized_cov_params;
         let diag = DMatrix::from_diagonal(&singular_values);
         let rank = &diag.rank(0.0);
-        let input_vec: Vec<_> = low_level_result.inputs.iter().copied().collect();
+        let input_vec = low_level_result.inputs.to_vec();
         let input_matrix = DMatrix::from_vec(low_level_result.inputs.len(), 1, input_vec);
         let residuals = &input_matrix - (low_level_result.outputs * parameters.to_owned());
         let ssr = residuals.dot(&residuals);
