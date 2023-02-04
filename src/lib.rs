@@ -1077,9 +1077,9 @@ fn get_low_level_regression(
         Error::InconsistentVectors
     );
     let data = DMatrix::from_row_slice(num_rows, num_columns, data_row_major);
-    let inputs = data.slice((0, 0), (num_rows, 1));
+    let inputs = data.view((0, 0), (num_rows, 1));
     let inputs: Vec<f64> = inputs.iter().copied().collect();
-    let outputs: DMatrix<f64> = data.slice((0, 1), (num_rows, num_columns - 1)).into_owned();
+    let outputs: DMatrix<f64> = data.view((0, 1), (num_rows, num_columns - 1)).into_owned();
     fit_ols_pinv(inputs, outputs)
 }
 

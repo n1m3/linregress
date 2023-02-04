@@ -16,6 +16,16 @@ who = "Nils Mehrtens"
 criteria = "safe-to-deploy"
 delta = "0.31.0 -> 0.31.3"
 
+[[audits.nalgebra]]
+who = "Nils Mehrtens"
+criteria = "safe-to-deploy"
+delta = "0.31.3 -> 0.32.1"
+
+[[audits.nalgebra-macros]]
+who = "Nils Mehrtens"
+criteria = "safe-to-deploy"
+delta = "0.1.0 -> 0.2.0"
+
 [[audits.num-complex]]
 who = "Nils Mehrtens"
 criteria = "safe-to-deploy"
@@ -66,6 +76,11 @@ who = "Nils Mehrtens"
 criteria = "safe-to-deploy"
 delta = "0.7.1 -> 0.7.3"
 
+[[audits.simba]]
+who = "Nils Mehrtens"
+criteria = "safe-to-deploy"
+delta = "0.7.3 -> 0.8.0"
+
 [[audits.syn]]
 who = "Nils Mehrtens"
 criteria = "safe-to-deploy"
@@ -90,4 +105,3 @@ version = "1.0.5"
 who = "Nils Mehrtens"
 criteria = "safe-to-deploy"
 delta = "0.7.4 -> 0.7.5"
-
