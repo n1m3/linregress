@@ -828,9 +828,9 @@ impl RegressionModel {
         Ok(predictions)
     }
 
-    fn check_variables<'a>(
+    fn check_variables(
         &self,
-        given_parameters: &HashMap<Cow<'a, str>, Vec<f64>>,
+        given_parameters: &HashMap<Cow<'_, str>, Vec<f64>>,
     ) -> Result<(), Error> {
         ensure!(!given_parameters.is_empty(), Error::NoData);
         let first_len = given_parameters.values().next().unwrap().len();
