@@ -103,6 +103,82 @@ fn test_pinv_with_data_columns() {
 }
 
 #[test]
+fn test_standard_error_equal_to_zero_does_not_prevent_fitting() {
+    // Regression test for underlying issue of https://github.com/n1m3/linregress/issues/9
+
+    // The following input does not conform to our API (we expect that all intercepts == 1, not 0),
+    // but Hyrum's law...
+    let data = vec![
+        0.0,
+        0.0,
+        0.0,
+        34059798.0,
+        0.0,
+        1.0,
+        66771421.0,
+        0.0,
+        2.0,
+        100206133.0,
+        0.0,
+        3.0,
+        133435943.0,
+        0.0,
+        4.0,
+        166028256.0,
+        0.0,
+        5.0,
+        199723152.0,
+        0.0,
+        6.0,
+        233754352.0,
+        0.0,
+        7.0,
+        267284084.0,
+        0.0,
+        8.0,
+        301756656.0,
+        0.0,
+        9.0,
+        331420366.0,
+        0.0,
+        10.0,
+        367961084.0,
+        0.0,
+        11.0,
+        401288216.0,
+        0.0,
+        12.0,
+        434555574.0,
+        0.0,
+        13.0,
+        469093436.0,
+        0.0,
+        14.0,
+        501541551.0,
+        0.0,
+        15.0,
+        523986797.0,
+        0.0,
+        16.0,
+        558792615.0,
+        0.0,
+        17.0,
+        631494010.0,
+        0.0,
+        18.0,
+        669229109.0,
+        0.0,
+        19.0,
+        704321427.0,
+        0.0,
+        20.0,
+    ];
+    let rows = 21;
+    let columns = 3;
+    fit_low_level_regression_model(&data, rows, columns).unwrap();
+}
+
+#[test]
 fn test_low_level_model_fitting() {
     let inputs = vec![1., 3., 4., 5., 2., 3., 4.];
     let outputs1 = vec![1., 2., 3., 4., 5., 6., 7.];

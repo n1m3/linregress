@@ -925,7 +925,10 @@ impl LowLevelRegressionModel {
         let centered_tss = centered_input_matrix.dot(&centered_input_matrix);
         let rsquared = 1. - (ssr / centered_tss);
         let rsquared_adj = 1. - ((n - 1) as f64 / df_resid as f64 * (1. - rsquared));
-        let tvalues = parameters.iter().zip(se.iter()).map(|(x, y)| x / y);
+        let tvalues = parameters
+            .iter()
+            .zip(se.iter())
+            .map(|(&x, &y)| x / y.max(std::f64::EPSILON));
         let pvalues: Vec<f64> = tvalues
             .map(|x| students_t_cdf(x.abs().neg(), df_resid as i64).map(|i| i * 2.))
             .collect::<Option<_>>()
