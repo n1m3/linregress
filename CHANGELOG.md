@@ -2,6 +2,8 @@
 ### Changed
 - Update `nalgebra` to version 0.31.3
 - Optimize various calculations (see [ef94ca0](https://github.com/n1m3/linregress/commit/ef94ca07ededb5d551309d581555778f71bf5136))
+### Bug fixes
+- Fix model fitting failure when standard error is equal to zero
 
 ## 0.5.0
 ### Changed
