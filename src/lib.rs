@@ -327,10 +327,9 @@ impl<'a> FormulaRegressionBuilder<'a> {
     }
 
     fn parse_formula(formula: &str) -> Result<(Cow<'_, str>, Vec<Cow<'_, str>>), Error> {
-        let split_formula: Vec<_> = formula.split('~').collect();
-        ensure!(split_formula.len() == 2, Error::InvalidFormula);
-        let input = split_formula[0].trim();
-        let outputs: Vec<_> = split_formula[1]
+        let (input, outputs) = formula.split_once('~').ok_or(Error::InvalidFormula)?;
+        let input = input.trim();
+        let outputs: Vec<_> = outputs
             .split('+')
             .map(str::trim)
             .filter(|x| !x.is_empty())
