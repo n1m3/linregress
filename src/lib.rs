@@ -296,8 +296,7 @@ impl<'a> FormulaRegressionBuilder<'a> {
             .ok_or_else(|| Error::ColumnNotInData(input.into()))?;
         let mut output_matrix = Vec::new();
         // Add column of all ones as the first column of the matrix
-        let all_ones_column = iter::repeat(1.).take(input_vector.len());
-        output_matrix.extend(all_ones_column);
+        output_matrix.resize(input_vector.len(), 1.);
         // Add each input as a new column of the matrix
         for output in &outputs {
             let output_vec = data
@@ -307,7 +306,7 @@ impl<'a> FormulaRegressionBuilder<'a> {
                 output_vec.len() == input_vector.len(),
                 Error::RegressorRegressandDimensionMismatch(output.to_string())
             );
-            output_matrix.extend(output_vec.iter());
+            output_matrix.extend_from_slice(output_vec);
         }
         let output_matrix = DMatrix::from_vec(input_vector.len(), outputs.len() + 1, output_matrix);
         let outputs: Vec<_> = outputs.iter().map(|x| x.to_string()).collect();
