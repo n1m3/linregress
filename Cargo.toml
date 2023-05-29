@@ -10,7 +10,6 @@ repository = "https://github.com/n1m3/linregress"
 readme = "README.md"
 keywords = ["statistics", "regression", "ols"]
 license = "MIT"
-exclude = ["*.sh"]
 
 [dependencies]
 nalgebra = "0.32.2"
