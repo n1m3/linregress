@@ -1,4 +1,8 @@
-## master
+## Unreleased
+### Changed
+ - Update `nalgebra` to `0.32.2`
+ - Replace dev dependency `criterion` with `tiny-bench`
+ - Minor performance improvements
 
 ## 0.5.1
 ### Changed
