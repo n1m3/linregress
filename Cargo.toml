@@ -15,7 +15,7 @@ license = "MIT"
 nalgebra = "0.32.2"
 
 [dev-dependencies]
-criterion = { version = "0.3.6", features = ["html_reports"] }
+tiny-bench = "0.3.0"
 
 [[bench]]
 name = "benchmarks"

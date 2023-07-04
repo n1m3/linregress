@@ -101,6 +101,11 @@ who = "Nils Mehrtens"
 criteria = "safe-to-deploy"
 delta = "1.0.98 -> 1.0.103"
 
+[[audits.tiny-bench]]
+who = "Nils Mehrtens"
+criteria = "safe-to-deploy"
+version = "0.3.0"
+
 [[audits.unicode-ident]]
 who = "Nils Mehrtens"
 criteria = "safe-to-deploy"
