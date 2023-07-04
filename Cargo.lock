@@ -25,7 +25,7 @@ checksum = "5aec14f5d4e6e3f927cd0c81f72e5710d95ee9019fbeb4b3021193867491bfd8"
 
 [[package]]
 name = "linregress"
-version = "0.5.1"
+version = "0.5.2"
 dependencies = [
  "nalgebra",
  "tiny-bench",
