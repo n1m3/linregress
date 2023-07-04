@@ -103,7 +103,7 @@ fn test_pinv_with_data_columns() {
 }
 
 #[test]
-fn test_standard_error_equal_to_zero_does_not_prevent_fitting() {
+fn test_regression_standard_error_equal_to_zero_does_not_prevent_fitting() {
     // Regression test for underlying issue of https://github.com/n1m3/linregress/issues/9
 
     // The following input does not conform to our API (we expect that all intercepts == 1, not 0),
