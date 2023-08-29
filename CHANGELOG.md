@@ -1,4 +1,5 @@
 ## Unreleased
+ - Update `nalgebra` to `0.32.3`
 
 ## 0.5.2
 ### Changed

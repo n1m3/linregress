@@ -26,10 +26,20 @@ who = "Nils Mehrtens"
 criteria = "safe-to-deploy"
 delta = "0.32.1 -> 0.32.2"
 
+[[audits.nalgebra]]
+who = "Nils Mehrtens"
+criteria = "safe-to-deploy"
+delta = "0.32.2 -> 0.32.3"
+
 [[audits.nalgebra-macros]]
 who = "Nils Mehrtens"
 criteria = "safe-to-deploy"
 delta = "0.1.0 -> 0.2.0"
+
+[[audits.nalgebra-macros]]
+who = "Nils Mehrtens"
+criteria = "safe-to-deploy"
+delta = "0.2.0 -> 0.2.1"
 
 [[audits.num-complex]]
 who = "Nils Mehrtens"
