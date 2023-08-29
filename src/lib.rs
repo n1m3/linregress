@@ -574,19 +574,14 @@ impl RegressionDataBuilder {
 ///
 /// [`RegressionDataBuilder.invalid_value_handling`]: struct.RegressionDataBuilder.html#method.invalid_value_handling
 /// [`ReturnError`]: enum.InvalidValueHandling.html#variant.ReturnError
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 #[non_exhaustive]
 pub enum InvalidValueHandling {
     /// Return an error to the caller.
+    #[default]
     ReturnError,
     /// Drop the columns containing the invalid values.
     DropInvalid,
-}
-
-impl Default for InvalidValueHandling {
-    fn default() -> InvalidValueHandling {
-        InvalidValueHandling::ReturnError
-    }
 }
 
 /// A fitted regression model.
