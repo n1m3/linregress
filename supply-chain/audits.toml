@@ -11,6 +11,16 @@ who = "Nils Mehrtens"
 criteria = "safe-to-deploy"
 delta = "1.12.1 -> 1.12.2"
 
+[[audits.bytemuck]]
+who = "Nils Mehrtens"
+criteria = "safe-to-deploy"
+delta = "1.12.2 -> 1.13.1"
+
+[[audits.matrixmultiply]]
+who = "Nils Mehrtens"
+criteria = "safe-to-deploy"
+delta = "0.3.2 -> 0.3.7"
+
 [[audits.nalgebra]]
 who = "Nils Mehrtens"
 criteria = "safe-to-deploy"
@@ -46,6 +56,11 @@ who = "Nils Mehrtens"
 criteria = "safe-to-deploy"
 delta = "0.4.1 -> 0.4.2"
 
+[[audits.num-complex]]
+who = "Nils Mehrtens"
+criteria = "safe-to-deploy"
+delta = "0.4.2 -> 0.4.4"
+
 [[audits.num-rational]]
 who = "Nils Mehrtens"
 criteria = "safe-to-deploy"
@@ -56,10 +71,20 @@ who = "Nils Mehrtens"
 criteria = "safe-to-deploy"
 delta = "0.2.14 -> 0.2.15"
 
+[[audits.num-traits]]
+who = "Nils Mehrtens"
+criteria = "safe-to-deploy"
+delta = "0.2.15 -> 0.2.16"
+
 [[audits.paste]]
 who = "Nils Mehrtens"
 criteria = "safe-to-deploy"
 delta = "1.0.7 -> 1.0.9"
+
+[[audits.paste]]
+who = "Nils Mehrtens"
+criteria = "safe-to-deploy"
+delta = "1.0.9 -> 1.0.14"
 
 [[audits.proc-macro2]]
 who = "Nils Mehrtens"
@@ -76,6 +101,11 @@ who = "Nils Mehrtens"
 criteria = "safe-to-deploy"
 delta = "1.0.40 -> 1.0.47"
 
+[[audits.proc-macro2]]
+who = "Nils Mehrtens"
+criteria = "safe-to-deploy"
+delta = "1.0.47 -> 1.0.66"
+
 [[audits.quote]]
 who = "Nils Mehrtens"
 criteria = "safe-to-deploy"
@@ -86,6 +116,16 @@ who = "Nils Mehrtens"
 criteria = "safe-to-deploy"
 delta = "1.0.20 -> 1.0.21"
 
+[[audits.quote]]
+who = "Nils Mehrtens"
+criteria = "safe-to-deploy"
+delta = "1.0.21 -> 1.0.33"
+
+[[audits.safe_arch]]
+who = "Nils Mehrtens"
+criteria = "safe-to-deploy"
+delta = "0.6.0 -> 0.7.1"
+
 [[audits.simba]]
 who = "Nils Mehrtens"
 criteria = "safe-to-deploy"
@@ -95,6 +135,11 @@ delta = "0.7.1 -> 0.7.3"
 who = "Nils Mehrtens"
 criteria = "safe-to-deploy"
 delta = "0.7.3 -> 0.8.0"
+
+[[audits.simba]]
+who = "Nils Mehrtens"
+criteria = "safe-to-deploy"
+delta = "0.8.0 -> 0.8.1"
 
 [[audits.syn]]
 who = "Nils Mehrtens"
@@ -111,17 +156,37 @@ who = "Nils Mehrtens"
 criteria = "safe-to-deploy"
 delta = "1.0.98 -> 1.0.103"
 
+[[audits.syn]]
+who = "Nils Mehrtens"
+criteria = "safe-to-deploy"
+delta = "1.0.103 -> 1.0.109"
+
 [[audits.tiny-bench]]
 who = "Nils Mehrtens"
 criteria = "safe-to-deploy"
 version = "0.3.0"
+
+[[audits.typenum]]
+who = "Nils Mehrtens"
+criteria = "safe-to-deploy"
+delta = "1.15.0 -> 1.16.0"
 
 [[audits.unicode-ident]]
 who = "Nils Mehrtens"
 criteria = "safe-to-deploy"
 version = "1.0.5"
 
+[[audits.unicode-ident]]
+who = "Nils Mehrtens"
+criteria = "safe-to-deploy"
+delta = "1.0.5 -> 1.0.11"
+
 [[audits.wide]]
 who = "Nils Mehrtens"
 criteria = "safe-to-deploy"
 delta = "0.7.4 -> 0.7.5"
+
+[[audits.wide]]
+who = "Nils Mehrtens"
+criteria = "safe-to-deploy"
+delta = "0.7.5 -> 0.7.11"
