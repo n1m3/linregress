@@ -34,7 +34,7 @@ const GAMMA_DK: [f64; 11] = [
 // floating point numbers (64 bit) e.g. `2^-53`
 const F64_PREC: f64 = 1.1102230246251565e-16;
 
-/// Calculates the cumulative distribution function for the student's at `x`
+/// Calculates the cumulative distribution function for the student's T at `x`
 /// with location `0` and scale `1`.
 ///
 /// # Formula

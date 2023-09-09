@@ -66,7 +66,7 @@ impl fmt::Display for Error {
         match self {
             Error::InconsistentSlopes(inconsistent_slopes) => write!(
                 f,
-                "Number of slopes and output names is inconsistent. {} outputs != {} sloped",
+                "Number of slopes and output names is inconsistent. {} outputs != {} slopes",
                 inconsistent_slopes.get_output_name_count(),
                 inconsistent_slopes.get_slope_count()
             ),
