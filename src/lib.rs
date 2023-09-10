@@ -373,21 +373,22 @@ impl<'a> RegressionData<'a> {
             .into_iter()
             .map(|(key, value)| (key.into(), value))
             .collect();
-        let first_key = temp.keys().next();
         ensure!(
-            first_key.is_some(),
+            !temp.is_empty(),
             Error::RegressionDataError("The data contains no columns.".into())
         );
-        let first_key = first_key.unwrap();
-        let first_len = temp[first_key].len();
-        ensure!(
-            first_len > 0,
-            Error::RegressionDataError("The data contains an empty column.".into())
-        );
-        for key in temp.keys() {
-            let this_len = temp[key].len();
+        let mut len: Option<usize> = None;
+        for (key, val) in temp.iter() {
+            let this_len = val.len();
+            if len.is_none() {
+                len = Some(this_len);
+            }
             ensure!(
-                this_len == first_len,
+                this_len > 0,
+                Error::RegressionDataError("The data contains an empty column.".into())
+            );
+            ensure!(
+                Some(this_len) == len,
                 Error::RegressionDataError(
                     "The lengths of the columns in the given data are inconsistent.".into()
                 )
