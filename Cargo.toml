@@ -2,7 +2,7 @@
 name = "linregress"
 version = "0.5.3"
 authors = ["Nils Mehrtens <nils@hasinila.de>"]
-edition = "2018"
+edition = "2021"
 description = "ordinary least squared linear regression with some basic statistics"
 documentation = "https://docs.rs/linregress"
 homepage = "https://github.com/n1m3/linregress"

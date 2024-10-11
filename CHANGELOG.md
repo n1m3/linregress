@@ -1,4 +1,5 @@
 ## Unreleased
+- Update project to Rust 2021 edition
 
 ## 0.5.3
  - Update `nalgebra` to `0.32.3`
