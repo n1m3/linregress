@@ -2,12 +2,6 @@
 A Rust library providing an easy to use implementation of ordinary
 least squared linear regression with some basic statistics.
 
-## Contact
-Linregress has been developed by the Computational Systems Medicine group at the Chair of Experimental Bioinformatics.
-Contact:
-- [Dr. Tim Kacprowski](mailto:tim.kacprowski@wzw.tum.de)
-- [Nils Mehrtens](mailto:nils+gh@hasinila.de)
-
 ## Documentation
 
 [Full API documentation](https://docs.rs/linregress)
