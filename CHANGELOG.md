@@ -1,4 +1,5 @@
 ## Unreleased
+- Update `nalgebra` to `0.33.0`
 - Disable `nalgebra` `macros` feature to reduce dependencies
 - Update project to Rust 2021 edition
 
