@@ -12,7 +12,7 @@ keywords = ["statistics", "regression", "ols"]
 license = "MIT"
 
 [dependencies]
-nalgebra = "0.32.3"
+nalgebra = { version = "0.32.3", default-features = false, features = ["std"] }
 
 [dev-dependencies]
 tiny-bench = "0.3.0"

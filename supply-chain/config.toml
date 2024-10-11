@@ -24,10 +24,6 @@ criteria = "safe-to-deploy"
 version = "0.31.0"
 criteria = "safe-to-deploy"
 
-[[exemptions.nalgebra-macros]]
-version = "0.1.0"
-criteria = "safe-to-deploy"
-
 [[exemptions.num-complex]]
 version = "0.4.1"
 criteria = "safe-to-deploy"
@@ -48,14 +44,6 @@ criteria = "safe-to-deploy"
 version = "1.0.7"
 criteria = "safe-to-deploy"
 
-[[exemptions.proc-macro2]]
-version = "1.0.37"
-criteria = "safe-to-deploy"
-
-[[exemptions.quote]]
-version = "1.0.18"
-criteria = "safe-to-deploy"
-
 [[exemptions.rawpointer]]
 version = "0.2.1"
 criteria = "safe-to-deploy"
@@ -66,10 +54,6 @@ criteria = "safe-to-deploy"
 
 [[exemptions.simba]]
 version = "0.7.1"
-criteria = "safe-to-deploy"
-
-[[exemptions.syn]]
-version = "1.0.92"
 criteria = "safe-to-deploy"
 
 [[exemptions.typenum]]
