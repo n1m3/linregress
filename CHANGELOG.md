@@ -51,7 +51,7 @@
 
 ## 0.4.3
 ### Changed
-- Update `statrs` dependency to `0.15.0` to avoid multiple versions of `nalgebra` in out dependency tree
+- Update `statrs` dependency to `0.15.0` to avoid multiple versions of `nalgebra` in our dependency tree
 
 ## 0.4.2
 ### Changed
