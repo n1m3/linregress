@@ -193,7 +193,7 @@ pub struct FormulaRegressionBuilder<'a> {
     columns: Option<(Cow<'a, str>, Vec<Cow<'a, str>>)>,
 }
 
-impl<'a> Default for FormulaRegressionBuilder<'a> {
+impl Default for FormulaRegressionBuilder<'_> {
     fn default() -> Self {
         FormulaRegressionBuilder::new()
     }
@@ -922,7 +922,7 @@ impl LowLevelRegressionModel {
         let tvalues = parameters
             .iter()
             .zip(se.iter())
-            .map(|(&x, &y)| x / y.max(std::f64::EPSILON));
+            .map(|(&x, &y)| x / y.max(f64::EPSILON));
         let pvalues: Vec<f64> = tvalues
             .map(|x| students_t_cdf(x.abs().neg(), df_resid as i64).map(|i| i * 2.))
             .collect::<Option<_>>()
@@ -1106,7 +1106,7 @@ fn fit_ols_pinv(
     );
     let singular_values = outputs
         .to_owned()
-        .try_svd(false, false, std::f64::EPSILON, 0)
+        .try_svd(false, false, f64::EPSILON, 0)
         .ok_or_else(|| {
             Error::ModelFittingError(
                 "Computing the singular-value decomposition of the output matrix failed".into(),

@@ -23,6 +23,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+use std::f64::consts::{FRAC_1_SQRT_2, LN_2, PI};
+
 use super::*;
 use crate::assert_almost_eq;
 
@@ -48,19 +50,19 @@ fn test_students_t_cdf() {
 fn test_beta_reg() {
     assert_almost_eq!(beta_reg(0.5, 0.5, 0.5), 0.5, 1e-15);
     assert_eq!(beta_reg(0.5, 0.5, 1.0), 1.0);
-    assert_almost_eq!(beta_reg(1.0, 0.5, 0.5), 0.292893218813452475599, 1e-15);
+    assert_almost_eq!(beta_reg(1.0, 0.5, 0.5), 0.292_893_218_813_452_5, 1e-15);
     assert_eq!(beta_reg(1.0, 0.5, 1.0), 1.0);
-    assert_almost_eq!(beta_reg(2.5, 0.5, 0.5), 0.07558681842161243795, 1e-16);
+    assert_almost_eq!(beta_reg(2.5, 0.5, 0.5), 0.075_586_818_421_612_44, 1e-16);
     assert_eq!(beta_reg(2.5, 0.5, 1.0), 1.0);
-    assert_almost_eq!(beta_reg(0.5, 1.0, 0.5), 0.7071067811865475244, 1e-15);
+    assert_almost_eq!(beta_reg(0.5, 1.0, 0.5), FRAC_1_SQRT_2, 1e-15);
     assert_eq!(beta_reg(0.5, 1.0, 1.0), 1.0);
     assert_almost_eq!(beta_reg(1.0, 1.0, 0.5), 0.5, 1e-15);
     assert_eq!(beta_reg(1.0, 1.0, 1.0), 1.0);
-    assert_almost_eq!(beta_reg(2.5, 1.0, 0.5), 0.1767766952966368811, 1e-15);
+    assert_almost_eq!(beta_reg(2.5, 1.0, 0.5), 0.176_776_695_296_636_9, 1e-15);
     assert_eq!(beta_reg(2.5, 1.0, 1.0), 1.0);
-    assert_eq!(beta_reg(0.5, 2.5, 0.5), 0.92441318157838756205);
+    assert_eq!(beta_reg(0.5, 2.5, 0.5), 0.924_413_181_578_387_6);
     assert_eq!(beta_reg(0.5, 2.5, 1.0), 1.0);
-    assert_almost_eq!(beta_reg(1.0, 2.5, 0.5), 0.8232233047033631189, 1e-15);
+    assert_almost_eq!(beta_reg(1.0, 2.5, 0.5), 0.823_223_304_703_363_1, 1e-15);
     assert_eq!(beta_reg(1.0, 2.5, 1.0), 1.0);
     assert_almost_eq!(beta_reg(2.5, 2.5, 0.5), 0.5, 1e-15);
     assert_eq!(beta_reg(2.5, 2.5, 1.0), 1.0);
@@ -112,114 +114,32 @@ fn test_checked_beta_reg_x_gt_1() {
 #[test]
 fn test_ln_gamma() {
     assert!(ln_gamma(f64::NAN).is_nan());
-    assert_eq!(
-        ln_gamma(1.000001e-35),
-        80.59047725479209894029636783061921392709972287131139201585211
-    );
-    assert_almost_eq!(
-        ln_gamma(1.000001e-10),
-        23.02584992988323521564308637407936081168344192865285883337793,
-        1e-14
-    );
-    assert_almost_eq!(
-        ln_gamma(1.000001e-5),
-        11.51291869289055371493077240324332039045238086972508869965363,
-        1e-14
-    );
-    assert_eq!(
-        ln_gamma(1.000001e-2),
-        4.599478872433667224554543378460164306444416156144779542513592
-    );
-    assert_almost_eq!(
-        ln_gamma(0.1),
-        2.252712651734205959869701646368495118615627222294953765041739,
-        1e-14
-    );
-    assert_almost_eq!(
-        ln_gamma(1.0 - 1.0e-14),
-        5.772156649015410852768463312546533565566459794933360600e-15,
-        1e-15
-    );
+    assert_eq!(ln_gamma(1.000001e-35), 80.590_477_254_792_1);
+    assert_almost_eq!(ln_gamma(1.000001e-10), 23.025_849_929_883_236, 1e-14);
+    assert_almost_eq!(ln_gamma(1.000001e-5), 11.512_918_692_890_553, 1e-14);
+    assert_eq!(ln_gamma(1.000001e-2), 4.599_478_872_433_667);
+    assert_almost_eq!(ln_gamma(0.1), 2.252_712_651_734_206, 1e-14);
+    assert_almost_eq!(ln_gamma(1.0 - 1.0e-14), 5.772_156_649_015_411e-15, 1e-15);
     assert_almost_eq!(ln_gamma(1.0), 0.0, 1e-15);
-    assert_almost_eq!(
-        ln_gamma(1.0 + 1.0e-14),
-        -5.77215664901524635936177848990288632404978978079827014e-15,
-        1e-15
-    );
-    assert_almost_eq!(
-        ln_gamma(1.5),
-        -0.12078223763524522234551844578164721225185272790259946836386,
-        1e-14
-    );
+    assert_almost_eq!(ln_gamma(1.0 + 1.0e-14), -5.772_156_649_015_246e-15, 1e-15);
+    assert_almost_eq!(ln_gamma(1.5), -0.120_782_237_635_245_22, 1e-14);
     assert_almost_eq!(
         ln_gamma(f64::consts::PI / 2.0),
-        -0.11590380084550241329912089415904874214542604767006895,
+        -0.115_903_800_845_502_42,
         1e-14
     );
     assert_eq!(ln_gamma(2.0), 0.0);
-    assert_almost_eq!(
-        ln_gamma(2.5),
-        0.284682870472919159632494669682701924320137695559894729250145,
-        1e-13
-    );
-    assert_almost_eq!(
-        ln_gamma(3.0),
-        0.693147180559945309417232121458176568075500134360255254120680,
-        1e-14
-    );
-    assert_almost_eq!(
-        ln_gamma(f64::consts::PI),
-        0.82769459232343710152957855845235995115350173412073715,
-        1e-13
-    );
-    assert_almost_eq!(
-        ln_gamma(3.5),
-        1.200973602347074224816021881450712995770238915468157197042113,
-        1e-14
-    );
-    assert_almost_eq!(
-        ln_gamma(4.0),
-        1.791759469228055000812477358380702272722990692183004705855374,
-        1e-14
-    );
-    assert_almost_eq!(
-        ln_gamma(4.5),
-        2.453736570842442220504142503435716157331823510689763131380823,
-        1e-13
-    );
-    assert_almost_eq!(
-        ln_gamma(5.0 - 1.0e-14),
-        3.178053830347930558470257283303394288448414225994179545985931,
-        1e-14
-    );
-    assert_almost_eq!(
-        ln_gamma(5.0),
-        3.178053830347945619646941601297055408873990960903515214096734,
-        1e-14
-    );
-    assert_almost_eq!(
-        ln_gamma(5.0 + 1.0e-14),
-        3.178053830347960680823625919312848824873279228348981287761046,
-        1e-13
-    );
-    assert_almost_eq!(
-        ln_gamma(5.5),
-        3.957813967618716293877400855822590998551304491975006780729532,
-        1e-14
-    );
-    assert_almost_eq!(
-        ln_gamma(10.1),
-        13.02752673863323795851370097886835481188051062306253294740504,
-        1e-14
-    );
-    assert_almost_eq!(
-        ln_gamma(150.0 + 1.0e-12),
-        600.0094705553324354062157737572509902987070089159051628001813,
-        1e-12
-    );
-    assert_almost_eq!(
-        ln_gamma(1.001e+7),
-        1.51342135323817913130119829455205139905331697084416059779e+8,
-        1e-13
-    );
+    assert_almost_eq!(ln_gamma(2.5), 0.284_682_870_472_919_2, 1e-13);
+    assert_almost_eq!(ln_gamma(3.0), LN_2, 1e-14);
+    assert_almost_eq!(ln_gamma(PI), 0.827_694_592_323_437_1, 1e-13);
+    assert_almost_eq!(ln_gamma(3.5), 1.200_973_602_347_074_3, 1e-14);
+    assert_almost_eq!(ln_gamma(4.0), 1.791_759_469_228_055, 1e-14);
+    assert_almost_eq!(ln_gamma(4.5), 2.453_736_570_842_442_3, 1e-13);
+    assert_almost_eq!(ln_gamma(5.0 - 1.0e-14), 3.178_053_830_347_930_7, 1e-14);
+    assert_almost_eq!(ln_gamma(5.0), 3.178_053_830_347_945_8, 1e-14);
+    assert_almost_eq!(ln_gamma(5.0 + 1.0e-14), 3.178_053_830_347_961, 1e-13);
+    assert_almost_eq!(ln_gamma(5.5), 3.957_813_967_618_716_5, 1e-14);
+    assert_almost_eq!(ln_gamma(10.1), 13.027_526_738_633_238, 1e-14);
+    assert_almost_eq!(ln_gamma(150.0 + 1.0e-12), 600.009_470_555_332_4, 1e-12);
+    assert_almost_eq!(ln_gamma(1.001e+7), 1.513_421_353_238_179e8, 1e-13);
 }

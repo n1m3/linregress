@@ -1,3 +1,5 @@
+use std::f64::consts::PI;
+
 use super::*;
 
 #[test]
@@ -180,9 +182,9 @@ fn test_regression_standard_error_equal_to_zero_does_not_prevent_fitting() {
 
 #[test]
 fn test_low_level_model_fitting() {
-    let inputs = vec![1., 3., 4., 5., 2., 3., 4.];
-    let outputs1 = vec![1., 2., 3., 4., 5., 6., 7.];
-    let outputs2 = vec![7., 6., 5., 4., 3., 2., 1.];
+    let inputs = [1., 3., 4., 5., 2., 3., 4.];
+    let outputs1 = [1., 2., 3., 4., 5., 6., 7.];
+    let outputs2 = [7., 6., 5., 4., 3., 2., 1.];
     let mut data_row_major = Vec::with_capacity(4 * 7);
     for n in 0..7 {
         data_row_major.push(inputs[n]);
@@ -278,9 +280,9 @@ fn test_invalid_input_wrong_shape_y() {
 #[test]
 fn test_invalid_input_nan() {
     let y1 = vec![1., 2., 3., 4.];
-    let x1 = vec![1., 2., 3., std::f64::NAN];
+    let x1 = vec![1., 2., 3., f64::NAN];
     let data1 = vec![("Y", y1), ("X", x1)];
-    let y2 = vec![1., 2., 3., std::f64::NAN];
+    let y2 = vec![1., 2., 3., f64::NAN];
     let x2 = vec![1., 2., 3., 4.];
     let data2 = vec![("Y", y2), ("X", x2)];
     let r_data1 = RegressionDataBuilder::new().build_from(data1.to_owned());
@@ -298,9 +300,9 @@ fn test_invalid_input_nan() {
 #[test]
 fn test_invalid_input_infinity() {
     let y1 = vec![1., 2., 3., 4.];
-    let x1 = vec![1., 2., 3., std::f64::INFINITY];
+    let x1 = vec![1., 2., 3., f64::INFINITY];
     let data1 = vec![("Y", y1), ("X", x1)];
-    let y2 = vec![1., 2., 3., std::f64::NEG_INFINITY];
+    let y2 = vec![1., 2., 3., f64::NEG_INFINITY];
     let x2 = vec![1., 2., 3., 4.];
     let data2 = vec![("Y", y2), ("X", x2)];
     let r_data1 = RegressionDataBuilder::new().build_from(data1.to_owned());
@@ -334,11 +336,11 @@ fn test_drop_invalid_values() {
     assert_eq!(RegressionData::drop_invalid_values(data.to_owned()), data);
     data.insert(
         "invalid".into(),
-        vec![std::f64::NAN, 42., std::f64::NEG_INFINITY, 23.11],
+        vec![f64::NAN, 42., f64::NEG_INFINITY, 23.11],
     );
     data.insert(
         "invalid2".into(),
-        vec![1.337, -3.14, std::f64::INFINITY, 11.111111],
+        vec![1.337, PI, f64::INFINITY, 11.111111],
     );
     let mut ref_data: HashMap<Cow<'_, str>, Vec<f64>> = HashMap::new();
     ref_data.insert("Y".into(), vec![-2., -4.]);
@@ -346,7 +348,7 @@ fn test_drop_invalid_values() {
     ref_data.insert("bar".into(), vec![1., 4.]);
     ref_data.insert("baz".into(), vec![2.754, 4.11]);
     ref_data.insert("invalid".into(), vec![42., 23.11]);
-    ref_data.insert("invalid2".into(), vec![-3.14, 11.111111]);
+    ref_data.insert("invalid2".into(), vec![PI, 11.111111]);
     assert_eq!(
         ref_data,
         RegressionData::drop_invalid_values(data.to_owned())
@@ -357,7 +359,7 @@ fn test_drop_invalid_values() {
 fn test_all_invalid_input() {
     let data = vec![
         ("Y", vec![1., 2., 3.]),
-        ("X", vec![std::f64::NAN, std::f64::NAN, std::f64::NAN]),
+        ("X", vec![f64::NAN, f64::NAN, f64::NAN]),
     ];
     let builder = RegressionDataBuilder::new();
     let builder = builder.invalid_value_handling(InvalidValueHandling::DropInvalid);
